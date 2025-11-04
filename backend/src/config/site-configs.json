@@ -1,0 +1,98 @@
+{
+  "sites": [
+    {
+      "domain": "emol.com",
+      "name": "Emol",
+      "enabled": true,
+      "priority": 1,
+      "selectors": {
+        "listing": {
+          "container": [
+            ".col_center_noticia1-390px",
+            ".col_center_noticia2-390px",
+            ".caja_multi_model_item"
+          ],
+          "title": [
+            "h1 a",
+            "h3 a",
+            ".caja_multi_model_txt a"
+          ],
+          "link": [
+            "h1 a",
+            "h3 a",
+            ".caja_multi_model_txt a"
+          ],
+          "description": "p"
+        },
+        "article": {
+          "title": "#cuDetalle_cuTitular_tituloNoticia",
+          "subtitle": "#cuDetalle_cuTitular_bajadaNoticia",
+          "content": "#cuDetalle_cuTexto_textoNoticia",
+          "date": ".info-notaemol-porfecha",
+          "author": ".info-notaemol-porfecha",
+          "images": [
+            "#cuDetalle_cuTexto_ucImagen_contGaleria img",
+            "#cuDetalle_cuTexto_ucImagen_Img"
+          ]
+        }
+      },
+      "cleaningRules": [
+        {
+          "type": "regex",
+          "pattern": "^\\d{2}:\\d{2}\\s*\\|\\s*",
+          "description": "Remover timestamps del inicio del texto"
+        }
+      ],
+      "metadata": {
+        "dateFormat": "DD/MM/YYYY HH:mm",
+        "authorSeparator": "|",
+        "encoding": "utf-8"
+      }
+    },
+    {
+      "domain": "puromarketing.com",
+      "name": "PuroMarketing",
+      "enabled": true,
+      "priority": 2,
+      "selectors": {
+        "listing": {
+          "container": ".item-news",
+          "title": ".item-title",
+          "link": ".item-title a",
+          "description": ".item-description"
+        },
+        "article": {
+          "title": [
+            "h1.entry-title",
+            "h1.post-title",
+            "article h1"
+          ],
+          "content": [
+            "article .entry-content",
+            ".post-content",
+            ".article-content"
+          ],
+          "date": [
+            "time.entry-date",
+            ".post-date",
+            "time[datetime]"
+          ],
+          "author": [
+            ".author-name",
+            ".entry-author",
+            "[rel=\"author\"]"
+          ],
+          "images": [
+            "article img",
+            ".entry-content img",
+            ".post-content img"
+          ]
+        }
+      },
+      "cleaningRules": [],
+      "metadata": {
+        "encoding": "utf-8"
+      }
+    }
+  ]
+}

@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Sistema de Scraping</title>
+    <link rel="stylesheet" href="/css/global.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .metric-title {
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-icon {
+            font-size: 1.5rem;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-change {
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .metric-change.positive {
+            color: #059669;
+        }
+
+        .metric-change.negative {
+            color: #dc2626;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-indicator.healthy {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-indicator.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-indicator.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .data-table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .data-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: #f9fafb;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge.info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f4f6;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: #6b7280;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: -2px;
+        }
+
+        .tab:hover {
+            color: #2563eb;
+        }
+
+        .tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+        <div class="app-header-content">
+            <div class="app-logo">
+                <span class="logo-icon">📊</span>
+                <span class="logo-text">Panel de Administración</span>
+            </div>
+            <nav class="app-nav">
+                <a href="/scraper.html">Scraper</a>
+                <a href="/my-sources.html">Mis Fuentes</a>
+                <a href="/ai-search.html">Búsqueda IA</a>
+                <a href="/admin-dashboard.html" class="active">Admin</a>
+            </nav>
+            <div class="app-user-menu">
+                <span id="userName">Cargando...</span>
+                <button onclick="logout()" class="btn btn-sm btn-ghost">Cerrar Sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+        <!-- System Status Banner -->
+        <div id="system-status-banner" style="margin-bottom: 1rem;">
+            <div class="card">
+                <div class="card-body" style="padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span style="font-weight: 600;">Estado General del Sistema:</span>
+                            <span id="overall-system-status" class="badge">Verificando...</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button onclick="adminDashboard.checkSystemHealth()" class="btn btn-sm btn-primary">
+                                🔄 Actualizar Estado
+                            </button>
+                            <button onclick="adminDashboard.startAutoRefresh()" class="btn btn-sm btn-secondary">
+                                ▶️ Auto-refresh
+                            </button>
+                            <button onclick="adminDashboard.stopAutoRefresh()" class="btn btn-sm btn-ghost">
+                                ⏸️ Pausar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('overview')">📊 Resumen</button>
+            <button class="tab" onclick="switchTab('cache')">💾 Caché</button>
+            <button class="tab" onclick="switchTab('cleanup')">🧹 Limpieza</button>
+            <button class="tab" onclick="switchTab('metrics')">📈 Estadísticas</button>
+            <button class="tab" onclick="switchTab('system')">⚙️ Sistema</button>
+        </div>
+
+        <!-- Tab: Overview -->
+        <div id="tab-overview" class="tab-content active">
+            <h2 class="section-title">
+                <span>📊</span>
+                Resumen del Sistema
+            </h2>
+
+            <!-- System Health Status -->
+            <h3 class="section-title">
+                <span>🏥</span>
+                Salud del Sistema
+            </h3>
+            
+            <div class="dashboard-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Base de Datos</span>
+                        <span class="metric-icon">🗄️</span>
+                    </div>
+                    <div id="db-status" class="status-indicator">
+                        <span class="loading-spinner"></span>
+                        Verificando...
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Redis Cache</span>
+                        <span class="metric-icon">💾</span>
+                    </div>
+                    <div id="redis-status" class="status-indicator">
+                        <span class="loading-spinner"></span>
+                        Verificando...
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">API de IA (Groq)</span>
+                        <span class="metric-icon">🤖</span>
+                    </div>
+                    <div id="groq-status" class="status-indicator">
+                        <span class="loading-spinner"></span>
+                        Verificando...
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Sistema de Archivos</span>
+                        <span class="metric-icon">📁</span>
+                    </div>
+                    <div id="filesystem-status" class="status-indicator">
+                        <span class="loading-spinner"></span>
+                        Verificando...
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Performance -->
+            <h3 class="section-title">
+                <span>⚡</span>
+                Rendimiento del Sistema
+            </h3>
+            
+            <div class="dashboard-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Uso de Caché</span>
+                        <span class="metric-icon">⚡</span>
+                    </div>
+                    <div class="metric-value" id="cache-hitrate">-</div>
+                    <div class="metric-change">
+                        <span id="cache-change">Hit Rate</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Tiempo de Actividad</span>
+                        <span class="metric-icon">⏱️</span>
+                    </div>
+                    <div class="metric-value" id="system-uptime">-</div>
+                    <div class="metric-change">
+                        <span>Uptime del sistema</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Duplicados Detectados</span>
+                        <span class="metric-icon">🔍</span>
+                    </div>
+                    <div class="metric-value" id="duplicate-found">-</div>
+                    <div class="metric-change">
+                        <span id="duplicate-rate">Tasa: 0%</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Artículos Analizados</span>
+                        <span class="metric-icon">📊</span>
+                    </div>
+                    <div class="metric-value" id="duplicate-checked">-</div>
+                    <div class="metric-change">
+                        <span id="duplicate-coverage">Cobertura: 0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <h3 class="section-title">
+                <span>📈</span>
+                Estadísticas de Base de Datos
+            </h3>
+
+            <div class="dashboard-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Artículos Scrapeados</span>
+                        <span class="metric-icon">📰</span>
+                    </div>
+                    <div class="metric-value" id="total-news">-</div>
+                    <div class="metric-change">
+                        <span id="news-change">Total en BD</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">URLs Públicas</span>
+                        <span class="metric-icon">🌐</span>
+                    </div>
+                    <div class="metric-value" id="total-urls">-</div>
+                    <div class="metric-change">
+                        <span id="urls-change">Configuradas</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Configuraciones CSS</span>
+                        <span class="metric-icon">⚙️</span>
+                    </div>
+                    <div class="metric-value" id="total-configs">-</div>
+                    <div class="metric-change">
+                        <span id="configs-change">Sitios configurados</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Artículos Guardados</span>
+                        <span class="metric-icon">💾</span>
+                    </div>
+                    <div class="metric-value" id="total-saved">-</div>
+                    <div class="metric-change">
+                        <span id="saved-change">Por usuarios</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Cache -->
+        <div id="tab-cache" class="tab-content">
+            <h2 class="section-title">
+                <span>💾</span>
+                Gestión de Caché
+            </h2>
+
+            <div class="action-buttons">
+                <button onclick="refreshCacheStats()" class="btn btn-primary">
+                    🔄 Actualizar Estadísticas
+                </button>
+                <button onclick="clearAllCache()" class="btn btn-danger">
+                    🗑️ Limpiar Todo el Caché
+                </button>
+                <button onclick="clearScrapingCache()" class="btn btn-warning">
+                    🕷️ Limpiar Caché de Scraping
+                </button>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Total de Keys</span>
+                        <span class="metric-icon">🔑</span>
+                    </div>
+                    <div class="metric-value" id="cache-total-keys">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Cache Hits</span>
+                        <span class="metric-icon">✅</span>
+                    </div>
+                    <div class="metric-value" id="cache-hits">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Cache Misses</span>
+                        <span class="metric-icon">❌</span>
+                    </div>
+                    <div class="metric-value" id="cache-misses">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Hit Rate</span>
+                        <span class="metric-icon">📊</span>
+                    </div>
+                    <div class="metric-value" id="cache-hit-rate">-</div>
+                </div>
+            </div>
+
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo de Caché</th>
+                            <th>Keys</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cache-keys-table">
+                        <tr>
+                            <td colspan="3" style="text-align: center; padding: 2rem;">
+                                <span class="loading-spinner"></span> Cargando...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab: Cleanup -->
+        <div id="tab-cleanup" class="tab-content">
+            <h2 class="section-title">
+                <span>🧹</span>
+                Limpieza de Noticias Antiguas
+            </h2>
+
+            <div class="action-buttons">
+                <button onclick="runCleanup()" class="btn btn-primary">
+                    🧹 Ejecutar Limpieza Ahora
+                </button>
+                <button onclick="refreshCleanupStats()" class="btn btn-secondary">
+                    🔄 Actualizar Estadísticas
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>⚙️ Configuración</h3>
+                </div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                        <div>
+                            <strong>Estado:</strong>
+                            <span id="cleanup-enabled" class="badge">-</span>
+                        </div>
+                        <div>
+                            <strong>Días de Retención:</strong>
+                            <span id="cleanup-retention">-</span>
+                        </div>
+                        <div>
+                            <strong>Horario:</strong>
+                            <span id="cleanup-schedule">-</span>
+                        </div>
+                        <div>
+                            <strong>Zona Horaria:</strong>
+                            <span id="cleanup-timezone">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid" style="margin-top: 2rem;">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Noticias Totales</span>
+                        <span class="metric-icon">📰</span>
+                    </div>
+                    <div class="metric-value" id="cleanup-total-news">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Próximas a Expirar</span>
+                        <span class="metric-icon">⏰</span>
+                    </div>
+                    <div class="metric-value" id="cleanup-expiring">-</div>
+                    <div class="metric-change">
+                        <span>Próximos 7 días</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Última Limpieza</span>
+                        <span class="metric-icon">🕐</span>
+                    </div>
+                    <div class="metric-value" style="font-size: 1.5rem;" id="cleanup-last-run">-</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Espacio Liberado</span>
+                        <span class="metric-icon">💾</span>
+                    </div>
+                    <div class="metric-value" id="cleanup-space-saved">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Metrics -->
+        <div id="tab-metrics" class="tab-content">
+            <h2 class="section-title">
+                <span>📈</span>
+                Estadísticas de Scraping
+            </h2>
+
+            <div class="action-buttons">
+                <button onclick="refreshMetrics()" class="btn btn-primary">
+                    🔄 Actualizar
+                </button>
+                <select id="metrics-days" class="form-select" onchange="refreshMetrics()">
+                    <option value="7" selected>Últimos 7 días</option>
+                    <option value="30">Últimos 30 días</option>
+                </select>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Scraping Exitoso</span>
+                        <span class="metric-icon">✅</span>
+                    </div>
+                    <div class="metric-value" id="metrics-success-rate">-</div>
+                    <div class="metric-change">
+                        <span id="metrics-success-count">-</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Uso de IA</span>
+                        <span class="metric-icon">🤖</span>
+                    </div>
+                    <div class="metric-value" id="metrics-ai-calls">-</div>
+                    <div class="metric-change">
+                        <span id="metrics-ai-tokens">-</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Artículos por Día</span>
+                        <span class="metric-icon">📊</span>
+                    </div>
+                    <div class="metric-value" id="metrics-daily-avg">-</div>
+                    <div class="metric-change">
+                        <span id="metrics-daily-change">Promedio</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Dominios Activos</span>
+                        <span class="metric-icon">🌐</span>
+                    </div>
+                    <div class="metric-value" id="metrics-domains">-</div>
+                    <div class="metric-change">
+                        <span id="metrics-domains-change">Únicos</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3 class="section-title">
+                    <span>📊</span>
+                    Artículos por Dominio
+                </h3>
+                <div class="chart-wrapper">
+                    <canvas id="domainMetricsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: System -->
+        <div id="tab-system" class="tab-content">
+            <h2 class="section-title">
+                <span>⚙️</span>
+                Configuración del Sistema
+            </h2>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>🕷️ Scraping Automático</h3>
+                </div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                        <div>
+                            <strong>Estado:</strong>
+                            <span id="scraping-enabled" class="badge">-</span>
+                        </div>
+                        <div>
+                            <strong>Concurrencia:</strong>
+                            <span id="scraping-concurrency">-</span> URLs simultáneas
+                        </div>
+                        <div>
+                            <strong>Caché TTL:</strong>
+                            <span id="scraping-cache-ttl">-</span> segundos
+                        </div>
+                        <div>
+                            <strong>Detección Paywall:</strong>
+                            <span id="paywall-detection" class="badge">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <div class="card-header">
+                    <h3>🧹 Limpieza Automática</h3>
+                </div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                        <div>
+                            <strong>Estado:</strong>
+                            <span id="cleanup-enabled-sys" class="badge">-</span>
+                        </div>
+                        <div>
+                            <strong>Retención:</strong>
+                            <span id="cleanup-retention-sys">-</span> días
+                        </div>
+                        <div>
+                            <strong>Horario:</strong>
+                            <span id="cleanup-schedule-sys">-</span>
+                        </div>
+                        <div>
+                            <strong>Zona Horaria:</strong>
+                            <span id="cleanup-timezone-sys">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <div class="card-header">
+                    <h3>💾 Redis Cache</h3>
+                </div>
+                <div class="card-body">
+                    <div class="dashboard-grid">
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <span class="metric-title">Total Keys</span>
+                                <span class="metric-icon">🔑</span>
+                            </div>
+                            <div class="metric-value" id="sys-cache-keys">-</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <span class="metric-title">Hit Rate</span>
+                                <span class="metric-icon">⚡</span>
+                            </div>
+                            <div class="metric-value" id="sys-cache-hitrate">-</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <span class="metric-title">Hits</span>
+                                <span class="metric-icon">✅</span>
+                            </div>
+                            <div class="metric-value" id="sys-cache-hits">-</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <span class="metric-title">Misses</span>
+                                <span class="metric-icon">❌</span>
+                            </div>
+                            <div class="metric-value" id="sys-cache-misses">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/admin-dashboard.js"></script>
+</body>
+</html>

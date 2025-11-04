@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de URL - Simple</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 0;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: none;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+        }
+        .btn-test {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .btn-test:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .preview-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+        .preview-card h6 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .badge-success {
+            background: #10b981;
+        }
+        .badge-danger {
+            background: #ef4444;
+        }
+        .loading {
+            display: none;
+        }
+        .loading.active {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="fas fa-flask"></i> Test de URL - Versión Simple
+                </h3>
+                <p class="mb-0 mt-2 opacity-75">Prueba cualquier URL de noticias automáticamente</p>
+            </div>
+            <div class="card-body p-4">
+                <!-- Formulario Simple -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-link"></i> URL a probar
+                    </label>
+                    <input 
+                        type="url" 
+                        id="urlInput" 
+                        class="form-control form-control-lg" 
+                        placeholder="https://ejemplo.com/noticias"
+                        required
+                    >
+                    <small class="text-muted">
+                        Ejemplos: https://www.biobiochile.cl, https://www.emol.com/noticias/Nacional/
+                    </small>
+                </div>
+
+                <!-- Botón de Test -->
+                <div class="d-grid gap-2">
+                    <button onclick="testUrl()" class="btn btn-primary btn-lg btn-test">
+                        <i class="fas fa-play-circle"></i> Probar URL
+                        <span class="loading spinner-border spinner-border-sm ms-2"></span>
+                    </button>
+                </div>
+
+                <!-- Resultados -->
+                <div id="results" class="mt-4" style="display: none;">
+                    <hr>
+                    <div id="resultContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ayuda -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5><i class="fas fa-question-circle"></i> ¿Cómo funciona?</h5>
+                <ol class="mb-0">
+                    <li>Ingresa la URL de la página de noticias</li>
+                    <li>Click en "Probar URL"</li>
+                    <li>El sistema detecta automáticamente las noticias</li>
+                    <li>Si encuentra noticias, puedes agregarla al sistema</li>
+                </ol>
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="fas fa-lightbulb"></i> <strong>Tip:</strong> Usa URLs de categorías o secciones específicas para mejores resultados.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+
+        // Función de autenticación
+        async function authenticatedFetch(url, options = {}) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                ...options.headers
+            };
+
+            const response = await fetch(url, { ...options, headers });
+
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            return response;
+        }
+
+        // Test de URL
+        async function testUrl() {
+            const urlInput = document.getElementById('urlInput');
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'URL requerida',
+                    text: 'Por favor ingresa una URL'
+                });
+                return;
+            }
+
+            // Validar formato
+            try {
+                new URL(url);
+            } catch (e) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'URL inválida',
+                    text: 'Por favor ingresa una URL válida'
+                });
+                return;
+            }
+
+            // Mostrar loading
+            const btn = event.target;
+            const loading = btn.querySelector('.loading');
+            loading.classList.add('active');
+            btn.disabled = true;
+
+            try {
+                const response = await authenticatedFetch(`${API_URL}/api/simple-test`, {
+                    method: 'POST',
+                    body: JSON.stringify({ url })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccessResult(data);
+                } else {
+                    showErrorResult(data);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al probar la URL: ' + error.message
+                });
+            } finally {
+                loading.classList.remove('active');
+                btn.disabled = false;
+            }
+        }
+
+        // Mostrar resultado exitoso
+        function showSuccessResult(data) {
+            const resultsDiv = document.getElementById('results');
+            const contentDiv = document.getElementById('resultContent');
+
+            let html = `
+                <div class="alert alert-success">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-check-circle"></i> ¡Test Exitoso!
+                    </h5>
+                    <p class="mb-0">${data.message}</p>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-primary mb-0">${data.news_count}</h3>
+                                <small class="text-muted">Noticias encontradas</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-success mb-0"><i class="fas fa-robot"></i></h3>
+                                <small class="text-muted">Método: ${data.method}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-info mb-0">${Math.round(data.confidence * 100)}%</h3>
+                                <small class="text-muted">Confianza</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold mb-3"><i class="fas fa-eye"></i> Vista previa de noticias:</h6>
+            `;
+
+            data.preview.forEach((news, index) => {
+                html += `
+                    <div class="preview-card">
+                        <h6>${index + 1}. ${news.title}</h6>
+                        <p class="mb-1 small text-muted">${news.excerpt}...</p>
+                        <a href="${news.url}" target="_blank" class="small">
+                            <i class="fas fa-external-link-alt"></i> Ver artículo
+                        </a>
+                    </div>
+                `;
+            });
+
+            html += `
+                <div class="d-grid gap-2 mt-4">
+                    <button onclick="addUrl('${data.url}')" class="btn btn-success btn-lg">
+                        <i class="fas fa-plus-circle"></i> Agregar esta URL al sistema
+                    </button>
+                </div>
+            `;
+
+            contentDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+
+        // Mostrar resultado con error
+        function showErrorResult(data) {
+            const resultsDiv = document.getElementById('results');
+            const contentDiv = document.getElementById('resultContent');
+
+            let html = `
+                <div class="alert alert-danger">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-times-circle"></i> No se encontraron noticias
+                    </h5>
+                    <p class="mb-0">${data.error}</p>
+                </div>
+            `;
+
+            if (data.suggestions && data.suggestions.length > 0) {
+                html += `
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="fw-bold"><i class="fas fa-lightbulb"></i> Sugerencias:</h6>
+                            <ul class="mb-0">
+                                ${data.suggestions.map(s => `<li>${s}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+
+            contentDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+
+        // Agregar URL al sistema
+        async function addUrl(url) {
+            const { value: formValues } = await Swal.fire({
+                title: 'Agregar URL',
+                html: `
+                    <input id="swal-name" class="swal2-input" placeholder="Nombre (ej: BioBioChile)">
+                    <input id="swal-limit" type="number" class="swal2-input" placeholder="Límite de noticias (opcional)" min="1">
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Agregar',
+                cancelButtonText: 'Cancelar',
+                preConfirm: () => {
+                    return {
+                        name: document.getElementById('swal-name').value,
+                        limit: document.getElementById('swal-limit').value
+                    };
+                }
+            });
+
+            if (!formValues || !formValues.name) {
+                return;
+            }
+
+            try {
+                const body = {
+                    url: url,
+                    name: formValues.name
+                };
+
+                if (formValues.limit) {
+                    body.news_limit = parseInt(formValues.limit);
+                }
+
+                const response = await authenticatedFetch(`${API_URL}/api/public-urls`, {
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡URL agregada!',
+                        text: 'La URL se agregó correctamente al sistema',
+                        confirmButtonText: 'Ver URLs'
+                    }).then(() => {
+                        window.location.href = '/scraper.html';
+                    });
+                } else {
+                    throw new Error(data.error || 'Error al agregar URL');
+                }
+
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message
+                });
+            }
+        }
+
+        // Enter para enviar
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testUrl();
+            }
+        });
+    </script>
+</body>
+</html>

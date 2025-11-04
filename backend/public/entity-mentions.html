@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menciones de Entidad</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .mention-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        .mention-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .mention-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-bottom: 3px solid #667eea;
+        }
+        .mention-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .mention-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .mention-body {
+            padding: 20px;
+        }
+        .mention-context {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-style: italic;
+        }
+        .sentiment-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .sentiment-POSITIVE { background: #d4edda; color: #155724; }
+        .sentiment-NEGATIVE { background: #f8d7da; color: #721c24; }
+        .sentiment-NEUTRAL { background: #d1ecf1; color: #0c5460; }
+        .sentiment-MIXED { background: #fff3cd; color: #856404; }
+        .keywords {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        .keyword-tag {
+            background: #e7e9fc;
+            color: #667eea;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="entityName">Cargando...</h1>
+            <div id="stats" class="stats"></div>
+        </div>
+
+        <div class="filters">
+            <select id="sentimentFilter">
+                <option value="">Todos los sentimientos</option>
+                <option value="POSITIVE">Positivo</option>
+                <option value="NEGATIVE">Negativo</option>
+                <option value="NEUTRAL">Neutral</option>
+                <option value="MIXED">Mixto</option>
+            </select>
+            <button onclick="applyFilters()">Aplicar</button>
+        </div>
+
+        <div id="mentionsGrid"></div>
+        <div id="pagination"></div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        let currentEntityId = new URLSearchParams(window.location.search).get('id');
+        let currentPage = 1;
+
+        async function authenticatedFetch(url, options = {}) {
+            const token = localStorage.getItem('token');
+            return fetch(url, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+
+        async function loadMentions(page = 1) {
+            const sentiment = document.getElementById('sentimentFilter').value;
+            const params = new URLSearchParams({ page, limit: 20 });
+            if (sentiment) params.append('sentiment', sentiment);
+
+            const response = await authenticatedFetch(
+                `${API_URL}/api/entities/${currentEntityId}/mentions?${params}`
+            );
+            const data = await response.json();
+
+            if (data.success) {
+                renderMentions(data.data.mentions);
+                renderPagination(data.data.pagination);
+            }
+        }
+
+        function renderMentions(mentions) {
+            const grid = document.getElementById('mentionsGrid');
+            grid.innerHTML = mentions.map(m => {
+                const r = m.scraping_result;
+                const url = r.saved_urls?.url || r.public_url?.url || '#';
+                
+                return `
+                    <div class="mention-card">
+                        <div class="mention-header">
+                            <div class="mention-title">${r.title || 'Sin título'}</div>
+                            <div class="mention-meta">
+                                <span>📰 ${r.domain}</span>
+                                <span>📅 ${new Date(r.scraped_at).toLocaleDateString()}</span>
+                                ${r.category ? `<span>🏷️ ${r.category}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="mention-body">
+                            ${r.summary ? `<p>${r.summary}</p>` : ''}
+                            <div class="mention-context">
+                                <strong>Contexto:</strong> "${m.context}"
+                            </div>
+                            <span class="sentiment-badge sentiment-${m.sentiment}">
+                                ${m.sentiment}
+                            </span>
+                            ${m.keywords?.length ? `
+                                <div class="keywords">
+                                    ${m.keywords.map(k => `<span class="keyword-tag">${k}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                            <a href="${url}" target="_blank" class="btn">📖 Leer Noticia</a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderPagination(p) {
+            const container = document.getElementById('pagination');
+            container.innerHTML = `
+                <button onclick="loadMentions(${p.page - 1})" ${p.page === 1 ? 'disabled' : ''}>
+                    ← Anterior
+                </button>
+                <span>Página ${p.page} de ${p.pages}</span>
+                <button onclick="loadMentions(${p.page + 1})" ${p.page === p.pages ? 'disabled' : ''}>
+                    Siguiente →
+                </button>
+            `;
+        }
+
+        function applyFilters() {
+            loadMentions(1);
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!currentEntityId) {
+                alert('No se especificó una entidad');
+                window.location.href = '/entity-monitor-demo.html';
+                return;
+            }
+            loadMentions(1);
+        });
+    </script>
+</body>
+</html>

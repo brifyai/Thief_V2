@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Web Scraper</title>
+    <link rel="stylesheet" href="/css/design-system.css" />
+    <style>
+        /* Estilos específicos de login */
+        body {
+            background: var(--gradient-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: var(--spacing-lg);
+        }
+
+        .login-container {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius-2xl);
+            box-shadow: var(--shadow-2xl);
+            overflow: hidden;
+            max-width: 400px;
+            width: 100%;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-header {
+            background: var(--gradient-primary);
+            padding: var(--spacing-2xl) var(--spacing-xl);
+            text-align: center;
+            color: var(--text-inverse);
+        }
+
+        .login-header h1 {
+            font-size: var(--font-size-3xl);
+            margin-bottom: var(--spacing-sm);
+            color: var(--text-inverse);
+        }
+
+        .login-header p {
+            font-size: var(--font-size-sm);
+            opacity: 0.9;
+            color: var(--text-inverse);
+        }
+
+        .login-body {
+            padding: var(--spacing-2xl) var(--spacing-xl);
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: var(--spacing-xl);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .tab {
+            flex: 1;
+            padding: var(--spacing-md);
+            text-align: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-weight: var(--font-weight-medium);
+            border-bottom: 3px solid transparent;
+            transition: var(--transition-base);
+            margin-bottom: -2px;
+        }
+
+        .tab.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .error-message {
+            background: var(--color-error-light);
+            color: var(--color-error);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            margin-bottom: var(--spacing-lg);
+            font-size: var(--font-size-sm);
+            display: none;
+            border-left: 4px solid var(--color-error);
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                border-radius: 0;
+            }
+
+            .login-header {
+                padding: var(--spacing-xl) var(--spacing-lg);
+            }
+
+            .login-body {
+                padding: var(--spacing-xl) var(--spacing-lg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🕷️ Web Scraper</h1>
+            <p>Sistema de Web Scraping con IA</p>
+        </div>
+        <div class="login-body">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('login')">Iniciar Sesión</div>
+                <div class="tab" onclick="switchTab('register')">Registrarse</div>
+            </div>
+
+            <div id="error-message" class="error-message"></div>
+
+            <!-- Login Form -->
+            <div id="login-tab" class="tab-content active">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail" class="form-label">Email</label>
+                        <input 
+                            type="email" 
+                            id="loginEmail" 
+                            class="form-input"
+                            placeholder="tu@email.com"
+                            required
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword" class="form-label">Contraseña</label>
+                        <input 
+                            type="password" 
+                            id="loginPassword" 
+                            class="form-input"
+                            placeholder="••••••••"
+                            required
+                        />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full" id="loginBtn">
+                        Iniciar Sesión
+                    </button>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-tab" class="tab-content">
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="registerName" class="form-label">Nombre</label>
+                        <input 
+                            type="text" 
+                            id="registerName" 
+                            class="form-input"
+                            placeholder="Tu nombre"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail" class="form-label">Email</label>
+                        <input 
+                            type="email" 
+                            id="registerEmail" 
+                            class="form-input"
+                            placeholder="tu@email.com"
+                            required
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword" class="form-label">Contraseña</label>
+                        <input 
+                            type="password" 
+                            id="registerPassword" 
+                            class="form-input"
+                            placeholder="••••••••"
+                            required
+                        />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full" id="registerBtn">
+                        Registrarse
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verificar si ya está autenticado
+        const token = localStorage.getItem('token');
+        if (token) {
+            // Verificar que el token sea válido
+            fetch('/api/auth/verify', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.valid) {
+                    window.location.href = '/scraper';
+                } else {
+                    localStorage.removeItem('token');
+                }
+            })
+            .catch(() => {
+                localStorage.removeItem('token');
+            });
+        }
+
+        function switchTab(tab) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            if (tab === 'login') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('login-tab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('register-tab').classList.add('active');
+            }
+
+            hideError();
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function hideError() {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.classList.remove('show');
+        }
+
+        function setLoading(button, isLoading) {
+            if (isLoading) {
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner"></span>Cargando...';
+            } else {
+                button.disabled = false;
+                const isLogin = button.id === 'loginBtn';
+                button.textContent = isLogin ? 'Iniciar Sesión' : 'Registrarse';
+            }
+        }
+
+        // Login Form
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+
+            setLoading(btn, true);
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Error al iniciar sesión');
+                }
+
+                // Guardar token
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                // Redirigir
+                window.location.href = '/scraper';
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading(btn, false);
+            }
+        });
+
+        // Register Form
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const btn = document.getElementById('registerBtn');
+
+            if (password.length < 6) {
+                showError('La contraseña debe tener al menos 6 caracteres');
+                return;
+            }
+
+            setLoading(btn, true);
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password, name }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Error al registrarse');
+                }
+
+                // Guardar token
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                // Redirigir
+                window.location.href = '/scraper';
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading(btn, false);
+            }
+        });
+    </script>
+</body>
+</html>

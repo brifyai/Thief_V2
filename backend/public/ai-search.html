@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 Buscador Inteligente con IA - Web Scraper</title>
+    <link rel="stylesheet" href="/css/design-system.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* Estilos para buscador IA - Mismo diseño que scraper */
+        .swal-wide {
+            max-width: 900px !important;
+        }
+        
+        .swal2-html-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .info-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: var(--spacing-xl);
+            border-radius: var(--border-radius-xl);
+            margin-bottom: var(--spacing-xl);
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+
+        .info-banner h3 {
+            margin: 0 0 var(--spacing-md) 0;
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+        }
+
+        .info-banner p {
+            margin: var(--spacing-sm) 0;
+            font-size: var(--font-size-base);
+            opacity: 0.95;
+        }
+
+        .info-banner .highlight-box {
+            background: rgba(255, 255, 255, 0.2);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius-lg);
+            margin-top: var(--spacing-md);
+            backdrop-filter: blur(10px);
+        }
+
+        .search-box-container {
+            background: white;
+            padding: var(--spacing-2xl);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .search-box-title {
+            text-align: center;
+            color: var(--text-primary);
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .search-input-wrapper input {
+            width: 100%;
+            padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-lg) 3.5rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius-full);
+            font-size: var(--font-size-lg);
+            transition: all 0.3s ease;
+        }
+
+        .search-input-wrapper input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .search-input-wrapper .search-icon {
+            position: absolute;
+            left: var(--spacing-lg);
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: var(--font-size-xl);
+            color: var(--color-primary);
+        }
+
+        .example-queries {
+            background: var(--bg-secondary);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius-lg);
+            margin-top: var(--spacing-lg);
+        }
+
+        .example-queries h4 {
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--spacing-md);
+            color: var(--text-primary);
+        }
+
+        .example-tag {
+            display: inline-block;
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--border-radius-full);
+            margin: var(--spacing-xs);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: var(--font-size-sm);
+        }
+
+        .example-tag:hover {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+        }
+
+        .user-info {
+            position: fixed;
+            top: var(--spacing-lg);
+            right: var(--spacing-lg);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--border-radius-full);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            z-index: var(--z-fixed);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-info span {
+            color: var(--text-primary);
+            font-weight: var(--font-weight-semibold);
+            font-size: var(--font-size-sm);
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius-2xl);
+            box-shadow: var(--shadow-2xl);
+            margin: var(--spacing-2xl) auto;
+            max-width: 1200px;
+            overflow: hidden;
+        }
+
+        .ai-header {
+            background: var(--gradient-primary);
+            color: var(--text-inverse);
+            padding: var(--spacing-2xl);
+            text-align: center;
+            position: relative;
+        }
+
+        .ai-header h1 {
+            margin: 0;
+            font-size: var(--font-size-4xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--text-inverse);
+        }
+
+        .ai-header p {
+            margin: var(--spacing-sm) 0 0 0;
+            font-size: var(--font-size-lg);
+            opacity: 0.9;
+            color: var(--text-inverse);
+        }
+
+        .ai-header-nav {
+            position: absolute;
+            top: var(--spacing-md);
+            right: var(--spacing-md);
+            z-index: 10;
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .ai-header-nav a {
+            color: var(--text-inverse);
+            text-decoration: none;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: rgba(255,255,255,0.2);
+            border-radius: var(--border-radius-full);
+            font-size: var(--font-size-sm);
+            transition: var(--transition-base);
+        }
+
+        .ai-header-nav a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .search-section {
+            padding: var(--spacing-3xl) var(--spacing-2xl);
+            background: var(--bg-primary);
+        }
+
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .search-input-group {
+            position: relative;
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-lg) 3.5rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius-full);
+            font-size: var(--font-size-lg);
+            transition: var(--transition-base);
+            background: var(--bg-primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: var(--spacing-lg);
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-primary);
+            font-size: var(--font-size-xl);
+        }
+
+        .ai-interpretation {
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--color-primary);
+            padding: var(--spacing-lg);
+            margin: var(--spacing-2xl) 0;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .ai-interpretation h5 {
+            color: var(--color-primary);
+            margin-bottom: var(--spacing-md);
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .filter-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+        }
+
+        .filter-tag {
+            background: var(--color-primary);
+            color: var(--text-inverse);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius-full);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .results-section {
+            padding: 0 var(--spacing-2xl) var(--spacing-3xl) var(--spacing-2xl);
+            background: var(--bg-primary);
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-2xl);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .result-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: 48px !important;
+            transition: var(--transition-base);
+            box-shadow: var(--shadow-sm);
+            clear: both;
+            display: block;
+            float: none;
+            position: relative;
+            overflow: visible;
+        }
+
+        .result-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--color-primary);
+        }
+
+        .result-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .category-badge {
+            background: var(--color-primary);
+            color: var(--text-inverse);
+            padding: 4px 12px;
+            border-radius: var(--border-radius-lg);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .result-preview {
+            line-height: var(--line-height-relaxed);
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .highlight {
+            background: var(--color-warning-light);
+            padding: 2px 4px;
+            border-radius: var(--border-radius-sm);
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-2xl);
+        }
+
+        .page-btn {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            transition: var(--transition-base);
+            min-height: 44px;
+        }
+
+        .page-btn:hover, .page-btn.active {
+            background: var(--color-primary);
+            color: var(--text-inverse);
+            border-color: var(--color-primary);
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: var(--spacing-2xl);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: var(--spacing-3xl);
+            color: var(--text-secondary);
+        }
+
+        .no-results i {
+            font-size: var(--font-size-4xl);
+            color: var(--border-color);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .example-queries {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            margin-top: var(--spacing-2xl);
+        }
+
+        .example-queries h6 {
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-md);
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .example-query {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-full);
+            padding: var(--spacing-sm) var(--spacing-md);
+            margin: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) 0;
+            display: inline-block;
+            cursor: pointer;
+            transition: var(--transition-base);
+            font-size: var(--font-size-sm);
+        }
+
+        .example-query:hover {
+            background: var(--color-primary);
+            color: var(--text-inverse);
+            border-color: var(--color-primary);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: var(--spacing-sm);
+            }
+
+            .user-info {
+                top: var(--spacing-sm);
+                right: var(--spacing-sm);
+                padding: var(--spacing-xs) var(--spacing-sm);
+            }
+
+            .ai-header h1 {
+                font-size: var(--font-size-2xl);
+            }
+
+            .ai-header-nav {
+                position: static;
+                justify-content: center;
+                margin-top: var(--spacing-md);
+            }
+            
+            .search-section {
+                padding: var(--spacing-2xl) var(--spacing-md);
+            }
+            
+            .results-section {
+                padding: 0 var(--spacing-md) var(--spacing-2xl) var(--spacing-md);
+            }
+            
+            .results-header {
+                flex-direction: column;
+                gap: var(--spacing-md);
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body class="app-container">
+    <!-- Header Global -->
+    <header class="app-header">
+        <div class="app-header-content">
+            <div class="app-logo">
+                <span class="app-logo-icon">🧠</span>
+                <span>Buscador Inteligente</span>
+            </div>
+            
+            <nav class="app-nav">
+                <a href="/scraper.html" class="app-nav-link">
+                    <span class="app-nav-icon">🏠</span>
+                    <span>Scraper</span>
+                </a>
+                <a href="/search.html" class="app-nav-link">
+                    <span class="app-nav-icon">🔍</span>
+                    <span>Búsqueda</span>
+                </a>
+                <a href="/ai-search.html" class="app-nav-link active">
+                    <span class="app-nav-icon">🧠</span>
+                    <span>IA</span>
+                </a>
+            </nav>
+            
+            <div class="app-user">
+                <div class="app-user-avatar" id="userAvatar">U</div>
+                <span class="app-user-name" id="userName">Usuario</span>
+                <button onclick="logout()" class="btn btn-secondary btn-sm">
+                    🚪 Salir
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="app-main">
+        <div class="app-content">
+            <!-- Banner Informativo -->
+            <div class="info-banner">
+                <h3>🧠 ¿Qué es el Buscador Inteligente?</h3>
+                <p>📚 <strong>Busca en TODAS las noticias que has guardado</strong> usando lenguaje natural</p>
+                <p>✨ La IA entiende tu pregunta y encuentra las noticias más relevantes</p>
+                <div class="highlight-box">
+                    <p style="margin: 0; font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold);">
+                        📄 Busca entre las páginas que scrapeaste con el botón "🕷️ Scrapear"
+                    </p>
+                    <p style="margin: var(--spacing-xs) 0 0 0; font-size: var(--font-size-sm);">
+                        Todas las noticias que guardaste están indexadas y listas para buscar
+                    </p>
+                </div>
+            </div>
+
+            <!-- Sección de Noticias Destacadas -->
+            <div id="highlightsSection" style="margin-bottom: var(--spacing-2xl);"></div>
+
+            <!-- Caja de Búsqueda -->
+            <div class="search-box-container">
+                <h2 class="search-box-title">🔍 Pregunta en Lenguaje Natural</h2>
+                
+                <div class="search-input-wrapper">
+                    <span class="search-icon">🧠</span>
+                    <input 
+                        type="text" 
+                        id="aiSearchInput" 
+                        placeholder="Ej: '¿Qué noticias tengo sobre tecnología?', 'Busca artículos de política', 'Noticias de Santiago'..."
+                        autocomplete="off"
+                    >
+                </div>
+                
+                <div style="text-align: center; margin-bottom: var(--spacing-lg);">
+                    <button id="searchBtn" class="btn btn-primary btn-lg" style="padding: var(--spacing-md) var(--spacing-2xl);">
+                        ✨ Buscar con Inteligencia Artificial
+                    </button>
+                </div>
+
+                <!-- Ejemplos de consultas -->
+                <div class="example-queries">
+                    <h4>💡 Ejemplos de búsquedas que puedes hacer:</h4>
+                    <span class="example-tag" onclick="setExampleQuery('¿Qué noticias tengo sobre Gabriel Boric?')">¿Qué noticias tengo sobre Gabriel Boric?</span>
+                    <span class="example-tag" onclick="setExampleQuery('Busca artículos de tecnología')">Busca artículos de tecnología</span>
+                    <span class="example-tag" onclick="setExampleQuery('Noticias de fútbol chileno')">Noticias de fútbol chileno</span>
+                    <span class="example-tag" onclick="setExampleQuery('Artículos sobre empresas')">Artículos sobre empresas</span>
+                    <span class="example-tag" onclick="setExampleQuery('Noticias de la Región Metropolitana')">Noticias de la Región Metropolitana</span>
+                    <span class="example-tag" onclick="setExampleQuery('¿Qué pasó en política?')">¿Qué pasó en política?</span>
+                    <span class="example-tag" onclick="setExampleQuery('Noticias de salud y medicina')">Noticias de salud y medicina</span>
+                    <span class="example-tag" onclick="setExampleQuery('Artículos internacionales')">Artículos internacionales</span>
+                </div>
+            </div>
+
+            <!-- Sección de Resultados -->
+            <div id="resultsSection" style="display: none;">
+                <!-- Interpretación de la IA -->
+                <div id="aiInterpretation" class="card" style="background: #f0f9ff; border-left: 4px solid var(--color-primary); margin-bottom: var(--spacing-xl);">
+                    <div class="card-body">
+                        <h4 style="color: var(--color-primary); margin-bottom: var(--spacing-md);">
+                            🧠 La IA entendió tu búsqueda como:
+                        </h4>
+                        <p id="aiExplanation" style="font-size: var(--font-size-base); color: var(--text-primary); margin-bottom: var(--spacing-md);"></p>
+                        <div id="appliedFilters" style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm);"></div>
+                    </div>
+                </div>
+
+                <!-- Resultados -->
+                <div class="card">
+                    <div class="card-header" style="background: white; border-bottom: 2px solid var(--border-color); padding: var(--spacing-lg);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--spacing-md);">
+                            <h3 id="resultsTitle" style="margin: 0; color: var(--text-primary);">📊 Resultados</h3>
+                            <div style="display: flex; gap: var(--spacing-md); font-size: var(--font-size-sm); color: var(--text-secondary);">
+                                <span id="resultsInfo"></span>
+                                <span id="executionTime"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding: var(--spacing-xl);">
+                        <div id="resultsGrid" style="display: block;"></div>
+                        <div id="pagination" style="display: flex; justify-content: center; gap: var(--spacing-sm); margin-top: var(--spacing-2xl); flex-wrap: wrap;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para contenido completo -->
+    <div class="modal fade" id="contentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Contenido Completo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalContent">
+                    <!-- Contenido dinámico -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/auth.js"></script>
+    <script>
+        const API_URL = window.location.origin;
+        let currentPage = 1;
+        let currentQuery = '';
+        let totalPages = 1;
+
+        // ========== VERIFICACIÓN DE AUTENTICACIÓN ==========
+        (function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+
+            // Mostrar nombre de usuario
+            const userNameElement = document.getElementById('userName');
+            const userAvatar = document.getElementById('userAvatar');
+            
+            if (userNameElement) {
+                userNameElement.textContent = user.name || user.email || 'Usuario';
+            }
+            
+            if (userAvatar && user.name) {
+                userAvatar.textContent = user.name.charAt(0).toUpperCase();
+            }
+
+            // Verificar token
+            fetch('/api/auth/verify', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Token inválido');
+                return res.json();
+            })
+            .then(data => {
+                if (!data.valid) throw new Error('Token inválido');
+            })
+            .catch(() => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            });
+        })();
+
+        // Configurar event listeners
+        document.addEventListener('DOMContentLoaded', async function() {
+            const searchInput = document.getElementById('aiSearchInput');
+            const searchBtn = document.getElementById('searchBtn');
+
+            // Buscar al presionar Enter
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performAISearch();
+                }
+            });
+
+            // Buscar al hacer clic en el botón
+            searchBtn.addEventListener('click', performAISearch);
+
+            // Cargar ejemplos dinámicos y verificar URLs
+            await loadDynamicExamples();
+            
+            // Cargar noticias destacadas
+            await loadHighlights();
+        });
+
+        // Cargar ejemplos dinámicos basados en noticias reales
+        async function loadDynamicExamples() {
+            try {
+                // Verificar si hay URLs seleccionadas
+                const urlsResponse = await authenticatedFetch(`${API_URL}/api/my-urls`);
+                const urlsData = await urlsResponse.json();
+                
+                if (!urlsData.success || urlsData.data.length === 0) {
+                    // No hay URLs seleccionadas - Mostrar advertencia
+                    showNoUrlsWarning();
+                    return;
+                }
+
+                // Obtener categorías y dominios disponibles
+                const statsResponse = await authenticatedFetch(`${API_URL}/api/search/ai?query=estadísticas&limit=30`);
+                const statsData = await statsResponse.json();
+                
+                if (statsData.success && statsData.data.results.length > 0) {
+                    // Extraer categorías y dominios únicos
+                    const categories = [...new Set(statsData.data.results.map(r => r.category).filter(c => c))];
+                    const domains = [...new Set(statsData.data.results.map(r => r.domain).filter(d => d))];
+                    
+                    // Generar ejemplos dinámicos
+                    const exampleQueries = [];
+                    
+                    if (categories.length > 0) {
+                        exampleQueries.push(`Noticias de ${categories[0]}`);
+                        if (categories.length > 1) {
+                            exampleQueries.push(`Artículos sobre ${categories[1]}`);
+                        }
+                    }
+                    
+                    if (domains.length > 0) {
+                        const domainName = domains[0].replace('.cl', '').replace('.com', '');
+                        exampleQueries.push(`¿Qué hay en ${domainName}?`);
+                    }
+                    
+                    // Ejemplos genéricos basados en lo que hay
+                    exampleQueries.push('Noticias de hoy');
+                    exampleQueries.push('Artículos más recientes');
+                    exampleQueries.push('¿Qué noticias importantes tengo?');
+                    
+                    // Actualizar los ejemplos en el HTML
+                    updateExampleTags(exampleQueries.slice(0, 6));
+                } else {
+                    // Usar ejemplos genéricos
+                    updateExampleTags([
+                        'Noticias de hoy',
+                        'Artículos recientes',
+                        '¿Qué noticias importantes tengo?',
+                        'Buscar por categoría',
+                        'Últimas noticias',
+                        'Artículos destacados'
+                    ]);
+                }
+                
+            } catch (error) {
+                console.error('Error cargando ejemplos dinámicos:', error);
+                // Mantener ejemplos por defecto si falla
+            }
+        }
+
+        // Mostrar advertencia cuando no hay URLs seleccionadas
+        function showNoUrlsWarning() {
+            const exampleQueriesDiv = document.querySelector('.example-queries');
+            exampleQueriesDiv.innerHTML = `
+                <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 24px; text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                    <h4 style="color: #92400e; margin-bottom: 12px;">No tienes fuentes de noticias seleccionadas</h4>
+                    <p style="color: #78350f; margin-bottom: 20px;">
+                        Para poder buscar noticias, primero debes seleccionar las fuentes que te interesan.
+                    </p>
+                    <a href="/my-sources.html" class="btn btn-primary" style="display: inline-block; text-decoration: none;">
+                        📰 Ir a Mis Fuentes
+                    </a>
+                </div>
+            `;
+            
+            // Deshabilitar búsqueda
+            document.getElementById('aiSearchInput').disabled = true;
+            document.getElementById('searchBtn').disabled = true;
+            document.getElementById('aiSearchInput').placeholder = 'Primero selecciona fuentes de noticias...';
+        }
+
+        // Actualizar los tags de ejemplo
+        function updateExampleTags(examples) {
+            const exampleQueriesDiv = document.querySelector('.example-queries');
+            const h4 = exampleQueriesDiv.querySelector('h4');
+            
+            // Limpiar tags antiguos
+            exampleQueriesDiv.innerHTML = '';
+            
+            // Agregar título
+            const title = document.createElement('h4');
+            title.textContent = '💡 Ejemplos de búsquedas que puedes hacer:';
+            exampleQueriesDiv.appendChild(title);
+            
+            // Agregar nuevos tags
+            examples.forEach(query => {
+                const span = document.createElement('span');
+                span.className = 'example-tag';
+                span.textContent = query;
+                span.onclick = () => setExampleQuery(query);
+                exampleQueriesDiv.appendChild(span);
+            });
+        }
+
+        // Establecer consulta de ejemplo
+        function setExampleQuery(query) {
+            document.getElementById('aiSearchInput').value = query;
+            performAISearch();
+        }
+
+        // Realizar búsqueda con IA
+        async function performAISearch(page = 1) {
+            const query = document.getElementById('aiSearchInput').value.trim();
+            
+            if (!query) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '⚠️ Consulta vacía',
+                    text: 'Por favor, ingresa una pregunta o término de búsqueda',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            currentQuery = query;
+            currentPage = page;
+
+            // Mostrar loading
+            Swal.fire({
+                title: '🧠 Procesando con IA...',
+                html: 'La inteligencia artificial está analizando tu consulta y buscando en tus noticias guardadas...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                const response = await authenticatedFetch('/api/search/ai', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        page: page,
+                        limit: 10
+                    })
+                });
+
+                const data = await response.json();
+
+                Swal.close();
+
+                if (data.success) {
+                    displayAIInterpretation(data.data.aiInterpretation);
+                    displaySearchResults(data.data);
+                } else {
+                    throw new Error(data.error || 'Error en la búsqueda');
+                }
+
+            } catch (error) {
+                console.error('Error en búsqueda IA:', error);
+                
+                // Manejo específico de errores
+                let errorTitle = '❌ Error en la búsqueda';
+                let errorText = error.message || 'No se pudo completar la búsqueda';
+                let errorIcon = 'error';
+                
+                // Error 429: Rate limit de IA
+                if (error.message && error.message.includes('429')) {
+                    errorTitle = '⏱️ Demasiadas búsquedas';
+                    errorText = 'Has realizado muchas búsquedas. Por favor espera unos minutos antes de intentar de nuevo.';
+                    errorIcon = 'warning';
+                }
+                // Error 401/403: Sesión expirada
+                else if (error.message && (error.message.includes('401') || error.message.includes('403') || error.message.includes('Sesión expirada'))) {
+                    errorTitle = '🔒 Sesión expirada';
+                    errorText = 'Tu sesión ha expirado. Serás redirigido al login...';
+                    errorIcon = 'warning';
+                    Swal.fire({
+                        icon: errorIcon,
+                        title: errorTitle,
+                        text: errorText,
+                        confirmButtonColor: '#dc2626',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = '/';
+                    });
+                    return;
+                }
+                // Error de timeout
+                else if (error.message && (error.message.includes('timeout') || error.message.includes('ETIMEDOUT'))) {
+                    errorTitle = '⏰ Búsqueda muy lenta';
+                    errorText = 'La búsqueda tardó demasiado. Intenta con términos más específicos o menos palabras.';
+                }
+                // Error de query muy larga
+                else if (error.message && error.message.includes('demasiado larga')) {
+                    errorTitle = '📝 Consulta muy larga';
+                    errorText = 'Tu búsqueda es muy larga. Por favor usa máximo 200 caracteres.';
+                    errorIcon = 'warning';
+                }
+                // Error de IA no disponible
+                else if (error.message && (error.message.includes('API') || error.message.includes('Groq'))) {
+                    errorTitle = '🤖 IA temporalmente no disponible';
+                    errorText = 'El servicio de inteligencia artificial está temporalmente no disponible. Intenta de nuevo en unos minutos.';
+                    errorIcon = 'warning';
+                }
+                
+                Swal.fire({
+                    icon: errorIcon,
+                    title: errorTitle,
+                    text: errorText,
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        }
+
+        // Mostrar interpretación de la IA
+        function displayAIInterpretation(interpretation) {
+            const explanationP = document.getElementById('aiExplanation');
+            const filtersDiv = document.getElementById('appliedFilters');
+
+            explanationP.innerHTML = `
+                <strong>💡 Idea central:</strong> ${interpretation.explanation || 'La IA ha procesado tu consulta'}<br>
+                <strong>🎯 Confianza:</strong> ${Math.round((interpretation.confidence || 0.7) * 100)}%
+            `;
+
+            filtersDiv.innerHTML = '';
+            
+            // Mostrar términos de búsqueda
+            if (interpretation.searchTerms && interpretation.searchTerms.length > 0) {
+                const termsTitle = document.createElement('div');
+                termsTitle.style.marginBottom = '8px';
+                termsTitle.style.fontWeight = '600';
+                termsTitle.textContent = '🔍 Términos de búsqueda:';
+                filtersDiv.appendChild(termsTitle);
+                
+                interpretation.searchTerms.forEach(term => {
+                    const tag = document.createElement('span');
+                    tag.style.display = 'inline-block';
+                    tag.style.background = '#e0e7ff';
+                    tag.style.color = '#4338ca';
+                    tag.style.padding = '4px 12px';
+                    tag.style.borderRadius = '20px';
+                    tag.style.marginRight = '8px';
+                    tag.style.marginBottom = '8px';
+                    tag.style.fontSize = '13px';
+                    tag.textContent = term;
+                    filtersDiv.appendChild(tag);
+                });
+            }
+            
+            // Mostrar conceptos semánticos
+            if (interpretation.semanticConcepts && interpretation.semanticConcepts.length > 0) {
+                const conceptsTitle = document.createElement('div');
+                conceptsTitle.style.marginTop = '12px';
+                conceptsTitle.style.marginBottom = '8px';
+                conceptsTitle.style.fontWeight = '600';
+                conceptsTitle.textContent = '🧠 Conceptos relacionados:';
+                filtersDiv.appendChild(conceptsTitle);
+                
+                interpretation.semanticConcepts.forEach(concept => {
+                    const tag = document.createElement('span');
+                    tag.style.display = 'inline-block';
+                    tag.style.background = '#fef3c7';
+                    tag.style.color = '#92400e';
+                    tag.style.padding = '4px 12px';
+                    tag.style.borderRadius = '20px';
+                    tag.style.marginRight = '8px';
+                    tag.style.marginBottom = '8px';
+                    tag.style.fontSize = '13px';
+                    tag.textContent = concept;
+                    filtersDiv.appendChild(tag);
+                });
+            }
+        }
+
+        // Mostrar resultados de búsqueda
+        function displaySearchResults(data) {
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsTitle = document.getElementById('resultsTitle');
+            const resultsInfo = document.getElementById('resultsInfo');
+            const executionTime = document.getElementById('executionTime');
+            const resultsGrid = document.getElementById('resultsGrid');
+
+            if (!data.results || data.results.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: '🔍 Sin resultados',
+                    text: 'No se encontraron noticias que coincidan con tu búsqueda. Intenta con otros términos.',
+                    confirmButtonColor: '#2563eb'
+                });
+                if (resultsSection) resultsSection.style.display = 'none';
+                return;
+            }
+
+            // Actualizar información de resultados con calidad de búsqueda
+            if (resultsTitle) resultsTitle.textContent = `📊 ${data.pagination?.totalResults || data.results.length} Resultados Relevantes`;
+            
+            let infoHTML = `${data.pagination?.totalResults || data.results.length} noticias muy relevantes`;
+            if (data.searchQuality) {
+                infoHTML += ` | 📈 Score promedio: ${data.searchQuality.averageScore}`;
+                if (data.pagination?.totalInDatabase) {
+                    infoHTML += ` | 🔍 Analizadas: ${data.searchQuality.totalScanned} de ${data.pagination.totalInDatabase}`;
+                }
+            }
+            if (resultsInfo) resultsInfo.textContent = infoHTML;
+            if (executionTime) executionTime.textContent = `⏱️ ${data.executionTime || '0ms'}`;
+
+            // Generar HTML de resultados CON SCORE DE RELEVANCIA
+            if (resultsGrid) {
+                resultsGrid.innerHTML = data.results.map((result, index) => {
+                    const relevancePercent = result.relevancePercentage || 50;
+                    const relevanceColor = relevancePercent >= 80 ? '#059669' : relevancePercent >= 60 ? '#d97706' : '#6b7280';
+                    const titulo = result.titulo || result.saved_urls?.title || 'Sin título';
+                    
+                    return `
+                    <div class="result-card" style="clear: both; display: block; float: none; border-left: 4px solid ${relevanceColor}; margin-bottom: 48px !important; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: relative;">
+                        <!-- Score de Relevancia -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 16px;">
+                            <h3 style="font-weight: 600; color: #1e293b; font-size: 18px; margin: 0; line-height: 1.4; flex: 1;">
+                                ${titulo}
+                            </h3>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                                <span style="font-size: 12px; color: #64748b; white-space: nowrap;">Relevancia:</span>
+                                <div style="background: #e2e8f0; border-radius: 20px; padding: 6px 14px; font-weight: 600; color: ${relevanceColor}; white-space: nowrap;">
+                                    ${relevancePercent}%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Metadata -->
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; font-size: 13px;">
+                            ${result.category ? `<span style="background: #e0e7ff; color: #4338ca; padding: 6px 12px; border-radius: 12px; font-weight: 500;">🏷️ ${result.category}</span>` : ''}
+                            ${result.region ? `<span style="background: #fef3c7; color: #92400e; padding: 6px 12px; border-radius: 12px; font-weight: 500;">📍 ${result.region}</span>` : ''}
+                            ${result.domain ? `<span style="background: #f0fdf4; color: #166534; padding: 6px 12px; border-radius: 12px; font-weight: 500;">🌐 ${result.domain}</span>` : ''}
+                            <span style="background: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 12px; font-weight: 500;">📅 ${new Date(result.scraped_at).toLocaleDateString('es-CL')}</span>
+                        </div>
+                        
+                        <!-- Preview del contenido -->
+                        <div style="color: #475569; line-height: 1.7; margin-bottom: 20px; font-size: 15px; padding: 16px; background: #f8fafc; border-radius: 8px;">
+                            ${result.preview || result.content?.substring(0, 300) + '...' || 'Sin contenido disponible'}
+                        </div>
+                        
+                        <!-- Botones de acción -->
+                        <div style="display: flex; gap: 8px; margin-top: 16px;">
+                            <button class="btn btn-primary btn-sm" onclick="viewFullContent(${result.id})" style="flex: 1; padding: 12px; font-size: 15px; font-weight: 600;">
+                                📖 Leer Artículo
+                            </button>
+                            <button class="btn btn-success btn-sm" onclick="saveArticle(${result.id})" style="flex: 1; padding: 12px; font-size: 15px; font-weight: 600;">
+                                💾 Guardar
+                            </button>
+                        </div>
+                        
+                        <!-- Espaciador invisible para evitar sobreposición -->
+                        <div style="height: 1px; clear: both;"></div>
+                    </div>
+                `}).join('');
+            }
+
+            // Generar paginación
+            if (data.pagination) {
+                generatePagination(data.pagination);
+                totalPages = data.pagination.totalPages;
+            }
+
+            if (resultsSection) resultsSection.style.display = 'block';
+        }
+
+        // Generar paginación
+        function generatePagination(pagination) {
+            const paginationDiv = document.getElementById('pagination');
+            
+            if (pagination.totalPages <= 1) {
+                paginationDiv.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+
+            // Botón anterior
+            if (pagination.currentPage > 1) {
+                paginationHTML += `<button class="page-btn" onclick="performAISearch(${pagination.currentPage - 1})">
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </button>`;
+            }
+
+            // Números de página
+            const startPage = Math.max(1, pagination.currentPage - 2);
+            const endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `<button class="page-btn ${i === pagination.currentPage ? 'active' : ''}" 
+                    onclick="performAISearch(${i})">${i}</button>`;
+            }
+
+            // Botón siguiente
+            if (pagination.currentPage < pagination.totalPages) {
+                paginationHTML += `<button class="page-btn" onclick="performAISearch(${pagination.currentPage + 1})">
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </button>`;
+            }
+
+            paginationDiv.innerHTML = paginationHTML;
+        }
+
+        // Ver contenido completo - Redirigir a página de lectura
+        function viewFullContent(id) {
+            // Redirigir a la página de lectura dedicada
+            window.location.href = `/article-reader.html?id=${id}`;
+        }
+
+        // Guardar artículo como favorito
+        async function saveArticle(scrapingResultId) {
+            try {
+                // Mostrar diálogo para agregar notas y tags
+                const { value: formValues } = await Swal.fire({
+                    title: '💾 Guardar Artículo',
+                    html: `
+                        <div style="text-align: left;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Notas personales (opcional):</label>
+                            <textarea id="swal-notes" class="swal2-textarea" placeholder="Escribe tus notas aquí..." style="width: 100%; height: 100px;"></textarea>
+                            
+                            <label style="display: block; margin: 1rem 0 0.5rem; font-weight: 600;">Tags (opcional, separados por coma):</label>
+                            <input id="swal-tags" class="swal2-input" placeholder="economía, importante, leer después" style="width: 100%;">
+                        </div>
+                    `,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: '💾 Guardar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#059669',
+                    preConfirm: () => {
+                        return {
+                            notes: document.getElementById('swal-notes').value,
+                            tags: document.getElementById('swal-tags').value.split(',').map(t => t.trim()).filter(t => t)
+                        };
+                    }
+                });
+
+                if (!formValues) return; // Usuario canceló
+
+                // Guardar artículo
+                const response = await authenticatedFetch(`${API_URL}/api/saved-articles`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        scraping_result_id: scrapingResultId,
+                        notes: formValues.notes || null,
+                        tags: formValues.tags
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ ¡Guardado!',
+                        html: `
+                            <p>Artículo guardado exitosamente</p>
+                            <a href="/my-articles.html" style="color: #2563eb; text-decoration: underline;">Ver mis artículos guardados</a>
+                        `,
+                        confirmButtonColor: '#059669'
+                    });
+                } else if (response.status === 409) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Ya guardado',
+                        text: 'Este artículo ya está en tus guardados',
+                        confirmButtonColor: '#2563eb'
+                    });
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+
+            } catch (error) {
+                console.error('Error guardando artículo:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: '❌ Error',
+                    text: error.message || 'No se pudo guardar el artículo',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        }
+
+        // ========== NOTICIAS DESTACADAS ==========
+        async function loadHighlights() {
+            try {
+                const response = await authenticatedFetch(`${API_URL}/api/highlights`);
+                const data = await response.json();
+
+                if (!data.success || !data.data.hasContent) {
+                    // No mostrar nada si no hay contenido
+                    return;
+                }
+
+                const highlightsSection = document.getElementById('highlightsSection');
+                
+                // Generar HTML para cada sección
+                let html = '<div style="margin-bottom: var(--spacing-2xl);">';
+                html += '<h2 style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary); margin-bottom: var(--spacing-lg); text-align: center;">⭐ Noticias Destacadas</h2>';
+                
+                data.data.sections.forEach(section => {
+                    html += `
+                        <div class="card" style="margin-bottom: var(--spacing-xl); overflow: hidden;">
+                            <div class="card-header" style="background: linear-gradient(135deg, ${section.color}15 0%, ${section.color}05 100%); border-left: 4px solid ${section.color}; padding: var(--spacing-lg);">
+                                <div style="display: flex; align-items: center; gap: var(--spacing-md);">
+                                    <span style="font-size: 32px;">${section.icon}</span>
+                                    <div style="flex: 1;">
+                                        <h3 style="margin: 0; color: ${section.color}; font-size: var(--font-size-xl); font-weight: var(--font-weight-bold);">
+                                            ${section.title}
+                                        </h3>
+                                        <p style="margin: var(--spacing-xs) 0 0 0; color: var(--text-secondary); font-size: var(--font-size-sm);">
+                                            ${section.subtitle}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body" style="padding: var(--spacing-lg);">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--spacing-md);">
+                    `;
+
+                    section.news.forEach(article => {
+                        const date = new Date(article.scraped_at).toLocaleDateString('es-CL', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        html += `
+                            <div class="highlight-card" style="background: white; border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); padding: var(--spacing-md); transition: all 0.2s ease; cursor: pointer; hover: transform: translateY(-2px);" onclick="viewFullContent(${article.id})">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--spacing-sm);">
+                                    ${article.category ? `<span style="background: ${section.color}20; color: ${section.color}; padding: 4px 8px; border-radius: var(--border-radius-md); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold);">${article.category}</span>` : '<span></span>'}
+                                    <span style="color: var(--text-secondary); font-size: var(--font-size-xs);">${date}</span>
+                                </div>
+                                <h4 style="margin: 0 0 var(--spacing-sm) 0; color: var(--text-primary); font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    ${article.title}
+                                </h4>
+                                ${article.summary ? `
+                                    <p style="margin: 0; color: var(--text-secondary); font-size: var(--font-size-sm); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                        ${article.summary}
+                                    </p>
+                                ` : ''}
+                                <div style="margin-top: var(--spacing-sm); padding-top: var(--spacing-sm); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-secondary); font-size: var(--font-size-xs);">🌐 ${article.domain}</span>
+                                    <span style="color: ${section.color}; font-size: var(--font-size-sm); font-weight: var(--font-weight-medium);">Leer →</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+
+                // Agregar estilos hover con JavaScript
+                html += `
+                    <style>
+                        .highlight-card:hover {
+                            transform: translateY(-4px);
+                            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                            border-color: var(--color-primary);
+                        }
+                    </style>
+                `;
+
+                highlightsSection.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error cargando highlights:', error);
+                // No mostrar error al usuario, simplemente no mostrar la sección
+            }
+        }
+    </script>
+</body>
+</html>

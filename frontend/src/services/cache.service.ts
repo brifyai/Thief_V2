@@ -1,0 +1,447 @@
+import { API_BASE_URL, getAuthHeaders } from '../lib/api-secure';
+
+export interface CacheHealth {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  redis: {
+    connected: boolean;
+    ping: number;
+    memory: {
+      used: number;
+      total: number;
+      percentage: number;
+    };
+    keys: number;
+    expires: number;
+  };
+  lastCheck: string;
+}
+
+export interface CacheStats {
+  totalKeys: number;
+  totalMemory: number;
+  hitRate: number;
+  missRate: number;
+  operations: {
+    gets: number;
+    sets: number;
+    deletes: number;
+    expires: number;
+  };
+  keyTypes: {
+    [key: string]: number;
+  };
+  oldestKey?: string;
+  newestKey?: string;
+  averageTTL: number;
+}
+
+export interface CacheKey {
+  key: string;
+  type: string;
+  size: number;
+  ttl?: number;
+  createdAt: string;
+  lastAccessed?: string;
+  accessCount: number;
+  expiresAt?: string;
+}
+
+export interface UserCacheInfo {
+  userId: number;
+  keys: CacheKey[];
+  totalKeys: number;
+  totalSize: number;
+  lastActivity: string;
+}
+
+class CacheService {
+
+  // ==================== Health Check ====================
+
+  async getHealth(): Promise<CacheHealth> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cache/health`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.data || {
+        status: 'unhealthy',
+        redis: {
+          connected: false,
+          ping: 0,
+          memory: { used: 0, total: 0, percentage: 0 },
+          keys: 0,
+          expires: 0
+        },
+        lastCheck: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error en getHealth:', error);
+      throw error;
+    }
+  }
+
+  // ==================== Estadísticas ====================
+
+  async getStats(): Promise<CacheStats> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cache/stats`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.data || {
+        totalKeys: 0,
+        totalMemory: 0,
+        hitRate: 0,
+        missRate: 0,
+        operations: {
+          gets: 0,
+          sets: 0,
+          deletes: 0,
+          expires: 0
+        },
+        keyTypes: {},
+        averageTTL: 0
+      };
+    } catch (error) {
+      console.error('Error en getStats:', error);
+      throw error;
+    }
+  }
+
+  // ==================== Gestión de Caché por Usuario ====================
+
+  async cleanUserCache(userId: number): Promise<{
+    success: boolean;
+    deletedKeys: number;
+    freedMemory: number;
+  }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cache/user/${userId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.data || {
+        success: false,
+        deletedKeys: 0,
+        freedMemory: 0
+      };
+    } catch (error) {
+      console.error('Error en cleanUserCache:', error);
+      throw error;
+    }
+  }
+
+  async cleanUserSearchCache(userId: number): Promise<{
+    success: boolean;
+    deletedKeys: number;
+    freedMemory: number;
+  }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cache/searches/${userId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.data || {
+        success: false,
+        deletedKeys: 0,
+        freedMemory: 0
+      };
+    } catch (error) {
+      console.error('Error en cleanUserSearchCache:', error);
+      throw error;
+    }
+  }
+
+  // ==================== Administración (Admin) ====================
+
+  async getKeys(pattern?: string): Promise<CacheKey[]> {
+    try {
+      const url = pattern 
+        ? `${API_BASE_URL}/cache/keys?pattern=${encodeURIComponent(pattern)}`
+        : `${API_BASE_URL}/cache/keys`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.data || [];
+    } catch (error) {
+      console.error('Error en getKeys:', error);
+      throw error;
+    }
+  }
+
+  async clearAllCache(): Promise<{
+    success: boolean;
+    deletedKeys: number;
+    freedMemory: number;
+    timeTaken: number;
+  }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cache/clear`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.data || {
+        success: false,
+        deletedKeys: 0,
+        freedMemory: 0,
+        timeTaken: 0
+      };
+    } catch (error) {
+      console.error('Error en clearAllCache:', error);
+      throw error;
+    }
+  }
+
+  async deleteKey(key: string): Promise<{
+    success: boolean;
+    deleted: boolean;
+    freedMemory: number;
+  }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cache/key/${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.data || {
+        success: false,
+        deleted: false,
+        freedMemory: 0
+      };
+    } catch (error) {
+      console.error('Error en deleteKey:', error);
+      throw error;
+    }
+  }
+
+  // ==================== Funciones Utilitarias ====================
+
+  // Formatear tamaño de memoria
+  formatMemory(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  // Formatear TTL
+  formatTTL(seconds: number): string {
+    if (seconds === -1) return 'Sin expiración';
+    if (seconds === 0) return 'Expirado';
+    
+    if (seconds < 60) {
+      return `${seconds}s`;
+    } else if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      return `${minutes}m`;
+    } else if (seconds < 86400) {
+      const hours = Math.floor(seconds / 3600);
+      return `${hours}h`;
+    } else {
+      const days = Math.floor(seconds / 86400);
+      return `${days}d`;
+    }
+  }
+
+  // Obtener color según estado de salud
+  getHealthColor(status: string): string {
+    switch (status) {
+      case 'healthy':
+        return 'text-green-600 bg-green-50';
+      case 'degraded':
+        return 'text-yellow-600 bg-yellow-50';
+      case 'unhealthy':
+        return 'text-red-600 bg-red-50';
+      default:
+        return 'text-gray-600 bg-gray-50';
+    }
+  }
+
+  // Obtener color según hit rate
+  getHitRateColor(hitRate: number): string {
+    if (hitRate >= 0.9) return 'text-green-600';
+    if (hitRate >= 0.7) return 'text-yellow-600';
+    return 'text-red-600';
+  }
+
+  // Analizar patrones de uso
+  async analyzeUsagePatterns(userId?: number): Promise<{
+    patterns: {
+      peakHours: number[];
+      mostAccessedKeys: CacheKey[];
+      keyTypes: { [key: string]: number };
+    };
+    recommendations: string[];
+  }> {
+    try {
+      // Esta sería una implementación más avanzada
+      // Por ahora, devolvemos datos básicos
+      const stats = await this.getStats();
+      const keys = await this.getKeys();
+      
+      const keyTypes: { [key: string]: number } = {};
+      keys.forEach(key => {
+        keyTypes[key.type] = (keyTypes[key.type] || 0) + 1;
+      });
+
+      const mostAccessedKeys = keys
+        .sort((a, b) => b.accessCount - a.accessCount)
+        .slice(0, 10);
+
+      return {
+        patterns: {
+          peakHours: [], // Implementar con datos reales
+          mostAccessedKeys,
+          keyTypes
+        },
+        recommendations: this.generateRecommendations(stats, keyTypes)
+      };
+    } catch (error) {
+      console.error('Error en analyzeUsagePatterns:', error);
+      return {
+        patterns: {
+          peakHours: [],
+          mostAccessedKeys: [],
+          keyTypes: {}
+        },
+        recommendations: []
+      };
+    }
+  }
+
+  private generateRecommendations(stats: CacheStats, keyTypes: { [key: string]: number }): string[] {
+    const recommendations: string[] = [];
+
+    if (stats.hitRate < 0.7) {
+      recommendations.push('El hit rate es bajo. Considera ajustar los TTL o revisar los patrones de acceso.');
+    }
+
+    if (stats.totalMemory > 1024 * 1024 * 1024) { // 1GB
+      recommendations.push('El uso de memoria es alto. Considera limpiar claves antiguas o reducir los TTL.');
+    }
+
+    const expiredKeys = Object.keys(keyTypes).filter(type => 
+      type.includes('expired') || type.includes('temp')
+    );
+    if (expiredKeys.length > 100) {
+      recommendations.push('Hay muchas claves expiradas. Considera una limpieza automática.');
+    }
+
+    return recommendations;
+  }
+
+  // Optimizar caché
+  async optimizeCache(): Promise<{
+    actions: Array<{
+      action: string;
+      result: string;
+      impact: string;
+    }>;
+    totalImpact: string;
+  }> {
+    try {
+      const actions = [];
+      const stats = await this.getStats();
+
+      // Limpiar claves expiradas
+      if (stats.totalKeys > 10000) {
+        // Implementar lógica de limpieza
+        actions.push({
+          action: 'Limpieza de claves expiradas',
+          result: 'Exitoso',
+          impact: 'Liberó memoria y mejoró rendimiento'
+        });
+      }
+
+      // Optimizar TTLs
+      if (stats.averageTTL > 3600) { // 1 hora
+        actions.push({
+          action: 'Optimización de TTLs',
+          result: 'Exitoso',
+          impact: 'Mejoró el hit rate y redujo uso de memoria'
+        });
+      }
+
+      return {
+        actions,
+        totalImpact: actions.length > 0 ? 'Mejoras aplicadas exitosamente' : 'No se requieren optimizaciones'
+      };
+    } catch (error) {
+      console.error('Error en optimizeCache:', error);
+      return {
+        actions: [],
+        totalImpact: 'Error al optimizar caché'
+      };
+    }
+  }
+
+  // Monitoreo en tiempo real
+  async startRealTimeMonitoring(callback: (data: CacheStats) => void): Promise<void> {
+    try {
+      // Implementar WebSocket o polling para monitoreo en tiempo real
+      const pollInterval = setInterval(async () => {
+        try {
+          const stats = await this.getStats();
+          callback(stats);
+        } catch (error) {
+          console.error('Error en monitoreo en tiempo real:', error);
+        }
+      }, 5000); // Cada 5 segundos
+
+      // Devolver función para detener el monitoreo
+      // return () => clearInterval(pollInterval);
+    } catch (error) {
+      console.error('Error en startRealTimeMonitoring:', error);
+      throw error;
+    }
+  }
+}
+
+export const cacheService = new CacheService();

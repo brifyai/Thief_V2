@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lector de Artículos</title>
+    <link rel="stylesheet" href="/css/article-reader.css">
+</head>
+<body>
+    <!-- Barra de progreso de lectura -->
+    <div id="reading-progress"></div>
+
+    <!-- Header fijo -->
+    <header class="reader-header">
+        <div class="header-content">
+            <button onclick="goBack()" class="btn-back">
+                ← Volver a resultados
+            </button>
+            
+            <div class="header-actions">
+                <button onclick="adjustFontSize(-1)" class="btn-icon" title="Reducir tamaño">A-</button>
+                <button onclick="adjustFontSize(0)" class="btn-icon" title="Tamaño normal">A</button>
+                <button onclick="adjustFontSize(1)" class="btn-icon" title="Aumentar tamaño">A+</button>
+                <button onclick="toggleDarkMode()" class="btn-icon" id="darkModeBtn" title="Modo oscuro">🌙</button>
+                <button onclick="saveArticle()" class="btn-icon" title="Guardar">💾</button>
+                <button onclick="printArticle()" class="btn-icon" title="Imprimir">🖨️</button>
+                <button onclick="shareArticle()" class="btn-icon" title="Compartir">📤</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenedor principal -->
+    <main class="reader-container" id="readerContainer">
+        <!-- Loading -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Cargando artículo...</p>
+        </div>
+
+        <!-- Contenido del artículo -->
+        <article id="articleContent" class="article-content" style="display: none;">
+            <!-- Metadata -->
+            <div class="article-meta">
+                <div class="meta-tags" id="metaTags"></div>
+                <div class="meta-info" id="metaInfo"></div>
+            </div>
+
+            <!-- Título -->
+            <h1 class="article-title" id="articleTitle"></h1>
+
+            <!-- Info adicional -->
+            <div class="article-info">
+                <span id="readingTime"></span>
+                <span id="articleDate"></span>
+                <a id="originalLink" href="#" target="_blank" rel="noopener">Ver original →</a>
+            </div>
+
+            <!-- Contenido -->
+            <div class="article-body" id="articleBody"></div>
+
+            <!-- Footer -->
+            <footer class="article-footer">
+                <p>✨ Contenido procesado y redactado por Inteligencia Artificial</p>
+                <div class="footer-actions">
+                    <button onclick="saveArticle()" class="btn-primary">💾 Guardar artículo</button>
+                    <button onclick="goBack()" class="btn-secondary">← Volver a resultados</button>
+                </div>
+            </footer>
+        </article>
+
+        <!-- Error -->
+        <div id="errorMessage" class="error-message" style="display: none;">
+            <h2>❌ Error al cargar artículo</h2>
+            <p id="errorText"></p>
+            <button onclick="goBack()" class="btn-primary">← Volver</button>
+        </div>
+    </main>
+
+    <script src="/js/article-reader.js"></script>
+</body>
+</html>

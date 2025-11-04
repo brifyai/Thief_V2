@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Artículos Guardados</title>
+    <link rel="stylesheet" href="/css/global.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        .articles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .article-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .article-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .article-card.read {
+            opacity: 0.7;
+        }
+
+        .article-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .article-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin: 0 0 0.5rem 0;
+            line-height: 1.4;
+        }
+
+        .article-meta {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .article-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .article-summary {
+            color: #4a5568;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .article-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            background: #edf2f7;
+            color: #2d3748;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .article-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-icon {
+            padding: 0.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.2rem;
+        }
+
+        .btn-read { background: #48bb78; color: white; }
+        .btn-read:hover { background: #38a169; }
+        .btn-edit { background: #4299e1; color: white; }
+        .btn-edit:hover { background: #3182ce; }
+        .btn-export { background: #ed8936; color: white; }
+        .btn-export:hover { background: #dd6b20; }
+        .btn-delete { background: #f56565; color: white; }
+        .btn-delete:hover { background: #e53e3e; }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2563eb;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Modal para leer artículo */
+        .read-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .read-modal-content {
+            background: white;
+            max-width: 800px;
+            margin: 2rem auto;
+            border-radius: 12px;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .read-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .read-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin: 0;
+            flex: 1;
+        }
+
+        .read-modal-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 0;
+            margin-left: 1rem;
+        }
+
+        .read-modal-body {
+            color: #4a5568;
+            line-height: 1.8;
+            font-size: 1.05rem;
+        }
+
+        .read-modal-notes {
+            background: #fef3c7;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .read-modal-notes h4 {
+            margin: 0 0 0.5rem 0;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+        <div class="app-header-content">
+            <div class="app-logo">
+                <h1>📰 Mis Artículos</h1>
+            </div>
+            <nav class="app-nav">
+                <a href="/my-sources.html">Mis Fuentes</a>
+                <a href="/ai-search.html">Búsqueda IA</a>
+                <a href="/my-articles.html" class="active">Mis Artículos</a>
+            </nav>
+            <div class="app-user-menu">
+                <span id="userEmail">Cargando...</span>
+                <button onclick="logout()" class="btn btn-secondary btn-sm">Cerrar Sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+        <!-- Estadísticas -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalSaved">0</div>
+                <div class="stat-label">Total Guardados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalUnread">0</div>
+                <div class="stat-label">Sin Leer</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalRead">0</div>
+                <div class="stat-label">Leídos</div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters">
+            <div class="filter-group">
+                <label>Estado</label>
+                <select id="filterRead" class="form-select" onchange="loadArticles()">
+                    <option value="">Todos</option>
+                    <option value="false">Sin leer</option>
+                    <option value="true">Leídos</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Tag</label>
+                <select id="filterTag" class="form-select" onchange="loadArticles()">
+                    <option value="">Todos los tags</option>
+                </select>
+            </div>
+            <div class="filter-group" style="justify-content: flex-end;">
+                <label>&nbsp;</label>
+                <button onclick="exportAllArticles()" class="btn btn-primary">
+                    📥 Exportar Todos
+                </button>
+            </div>
+        </div>
+
+        <!-- Grid de artículos -->
+        <div id="articlesContainer">
+            <div class="articles-grid" id="articlesGrid"></div>
+        </div>
+    </main>
+
+    <!-- Modal para leer artículo -->
+    <div id="readModal" class="read-modal">
+        <div class="read-modal-content">
+            <div class="read-modal-header">
+                <h2 class="read-modal-title" id="modalTitle"></h2>
+                <button class="read-modal-close" onclick="closeReadModal()">&times;</button>
+            </div>
+            <div class="read-modal-body" id="modalBody"></div>
+            <div class="read-modal-notes" id="modalNotes" style="display: none;">
+                <h4>📝 Mis Notas</h4>
+                <p id="modalNotesText"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script>
+        const API_URL = window.location.origin;
+        let currentArticles = [];
+        let allTags = [];
+
+        // Cargar usuario
+        async function loadUser() {
+            try {
+                const res = await authenticatedFetch(`${API_URL}/api/auth/me`);
+                const user = await res.json();
+                document.getElementById('userEmail').textContent = user.email;
+            } catch (error) {
+                console.error('Error cargando usuario:', error);
+                logout();
+            }
+        }
+
+        // Cargar estadísticas
+        async function loadStats() {
+            try {
+                const res = await authenticatedFetch(`${API_URL}/api/saved-articles/stats`);
+                const data = await res.json();
+                
+                if (data.success) {
+                    document.getElementById('totalSaved').textContent = data.data.total;
+                    document.getElementById('totalUnread').textContent = data.data.unread;
+                    document.getElementById('totalRead').textContent = data.data.read;
+                    
+                    // Actualizar tags en filtro
+                    allTags = data.data.tags;
+                    const filterTag = document.getElementById('filterTag');
+                    filterTag.innerHTML = '<option value="">Todos los tags</option>';
+                    allTags.forEach(tag => {
+                        const option = document.createElement('option');
+                        option.value = tag;
+                        option.textContent = tag;
+                        filterTag.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error cargando estadísticas:', error);
+            }
+        }
+
+        // Cargar artículos
+        async function loadArticles() {
+            const filterRead = document.getElementById('filterRead').value;
+            const filterTag = document.getElementById('filterTag').value;
+            
+            let url = `${API_URL}/api/saved-articles?limit=100`;
+            if (filterRead) url += `&is_read=${filterRead}`;
+            if (filterTag) url += `&tag=${encodeURIComponent(filterTag)}`;
+
+            try {
+                const res = await authenticatedFetch(url);
+                const data = await res.json();
+                
+                if (data.success) {
+                    currentArticles = data.data;
+                    renderArticles(currentArticles);
+                }
+            } catch (error) {
+                console.error('Error cargando artículos:', error);
+                Swal.fire('Error', 'No se pudieron cargar los artículos', 'error');
+            }
+        }
+
+        // Renderizar artículos
+        function renderArticles(articles) {
+            const grid = document.getElementById('articlesGrid');
+            
+            if (articles.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>No hay artículos guardados</h3>
+                        <p>Guarda artículos desde la búsqueda con IA para verlos aquí</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = articles.map(article => `
+                <div class="article-card ${article.is_read ? 'read' : ''}" data-id="${article.id}">
+                    <div class="article-header">
+                        <h3 class="article-title">${article.scraping_result.title}</h3>
+                    </div>
+                    
+                    <div class="article-meta">
+                        ${article.scraping_result.category ? `<span class="article-badge">${article.scraping_result.category}</span>` : ''}
+                        ${article.scraping_result.domain ? `<span class="article-badge">${article.scraping_result.domain}</span>` : ''}
+                        ${article.is_read ? '<span class="article-badge">✓ Leído</span>' : '<span class="article-badge">📌 Nuevo</span>'}
+                    </div>
+                    
+                    ${article.scraping_result.summary ? `
+                        <p class="article-summary">${article.scraping_result.summary}</p>
+                    ` : ''}
+                    
+                    ${article.tags && article.tags.length > 0 ? `
+                        <div class="article-tags">
+                            ${article.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="article-actions">
+                        <button class="btn-icon btn-read" onclick="readArticle(${article.id})" title="Leer">
+                            👁️
+                        </button>
+                        <button class="btn-icon btn-edit" onclick="editArticle(${article.id})" title="Editar">
+                            ✏️
+                        </button>
+                        <button class="btn-icon btn-export" onclick="exportArticle(${article.id})" title="Exportar">
+                            📥
+                        </button>
+                        <button class="btn-icon btn-delete" onclick="deleteArticle(${article.id})" title="Eliminar">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Leer artículo
+        async function readArticle(id) {
+            const article = currentArticles.find(a => a.id === id);
+            if (!article) return;
+
+            document.getElementById('modalTitle').textContent = article.scraping_result.title;
+            document.getElementById('modalBody').innerHTML = article.scraping_result.cleaned_content.replace(/\n/g, '<br>');
+            
+            if (article.notes) {
+                document.getElementById('modalNotes').style.display = 'block';
+                document.getElementById('modalNotesText').textContent = article.notes;
+            } else {
+                document.getElementById('modalNotes').style.display = 'none';
+            }
+
+            document.getElementById('readModal').style.display = 'block';
+
+            // Marcar como leído
+            if (!article.is_read) {
+                try {
+                    await authenticatedFetch(`${API_URL}/api/saved-articles/${id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ is_read: true })
+                    });
+                    await loadArticles();
+                    await loadStats();
+                } catch (error) {
+                    console.error('Error marcando como leído:', error);
+                }
+            }
+        }
+
+        function closeReadModal() {
+            document.getElementById('readModal').style.display = 'none';
+        }
+
+        // Editar artículo
+        async function editArticle(id) {
+            const article = currentArticles.find(a => a.id === id);
+            if (!article) return;
+
+            const { value: formValues } = await Swal.fire({
+                title: 'Editar Artículo',
+                html: `
+                    <div style="text-align: left;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Notas:</label>
+                        <textarea id="swal-notes" class="swal2-textarea" style="width: 100%; height: 100px;">${article.notes || ''}</textarea>
+                        
+                        <label style="display: block; margin: 1rem 0 0.5rem; font-weight: 600;">Tags (separados por coma):</label>
+                        <input id="swal-tags" class="swal2-input" value="${article.tags.join(', ')}" style="width: 100%;">
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Guardar',
+                cancelButtonText: 'Cancelar',
+                preConfirm: () => {
+                    return {
+                        notes: document.getElementById('swal-notes').value,
+                        tags: document.getElementById('swal-tags').value.split(',').map(t => t.trim()).filter(t => t)
+                    };
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const res = await authenticatedFetch(`${API_URL}/api/saved-articles/${id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(formValues)
+                    });
+                    
+                    if (res.ok) {
+                        Swal.fire('¡Guardado!', 'Artículo actualizado correctamente', 'success');
+                        await loadArticles();
+                        await loadStats();
+                    }
+                } catch (error) {
+                    console.error('Error actualizando artículo:', error);
+                    Swal.fire('Error', 'No se pudo actualizar el artículo', 'error');
+                }
+            }
+        }
+
+        // Exportar artículo como imagen
+        async function exportArticle(id) {
+            const article = currentArticles.find(a => a.id === id);
+            if (!article) return;
+
+            const element = document.querySelector(`[data-id="${id}"]`);
+            
+            try {
+                const canvas = await html2canvas(element, {
+                    backgroundColor: '#ffffff',
+                    scale: 2
+                });
+                
+                const link = document.createElement('a');
+                link.download = `articulo-${id}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                
+                Swal.fire('¡Exportado!', 'Artículo guardado como imagen', 'success');
+            } catch (error) {
+                console.error('Error exportando:', error);
+                Swal.fire('Error', 'No se pudo exportar el artículo', 'error');
+            }
+        }
+
+        // Exportar todos los artículos
+        async function exportAllArticles() {
+            Swal.fire({
+                title: 'Exportando...',
+                text: 'Generando PDF con todos los artículos',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Aquí podrías implementar exportación a PDF
+            // Por ahora, exportamos como JSON
+            const dataStr = JSON.stringify(currentArticles, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `mis-articulos-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+
+            Swal.fire('¡Exportado!', 'Artículos guardados como JSON', 'success');
+        }
+
+        // Eliminar artículo
+        async function deleteArticle(id) {
+            const result = await Swal.fire({
+                title: '¿Eliminar artículo?',
+                text: 'Esta acción no se puede deshacer',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#f56565'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await authenticatedFetch(`${API_URL}/api/saved-articles/${id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (res.ok) {
+                        Swal.fire('¡Eliminado!', 'Artículo eliminado correctamente', 'success');
+                        await loadArticles();
+                        await loadStats();
+                    }
+                } catch (error) {
+                    console.error('Error eliminando artículo:', error);
+                    Swal.fire('Error', 'No se pudo eliminar el artículo', 'error');
+                }
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadUser();
+            await loadStats();
+            await loadArticles();
+        });
+
+        // Cerrar modal al hacer clic fuera
+        document.getElementById('readModal').addEventListener('click', (e) => {
+            if (e.target.id === 'readModal') {
+                closeReadModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mis Fuentes - Web Scraper</title>
+    <link rel="stylesheet" href="/css/design-system.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .source-card {
+            background: white;
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .source-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+        
+        .source-card.selected {
+            border-color: var(--success);
+            background: var(--gray-50);
+        }
+        
+        .source-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+        
+        .source-info h3 {
+            margin: 0 0 0.5rem 0;
+            color: var(--gray-900);
+            font-size: 1.25rem;
+        }
+        
+        .source-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: var(--gray-600);
+        }
+        
+        .source-url {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+        
+        .source-url:hover {
+            text-decoration: underline;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 2px solid var(--gray-200);
+            margin-bottom: 2rem;
+        }
+        
+        .tab {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            transition: all 0.2s;
+        }
+        
+        .tab:hover {
+            color: var(--primary);
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--gray-500);
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="app-container">
+    <!-- Header Global -->
+    <header class="app-header">
+        <div class="app-header-content">
+            <div class="app-logo">
+                <span class="app-logo-icon">📰</span>
+                <span>Web Scraper</span>
+            </div>
+            
+            <nav class="app-nav">
+                <a href="/my-sources.html" class="app-nav-link active">
+                    📚 Mis Fuentes
+                </a>
+                <a href="/search.html" class="app-nav-link">
+                    🔍 Búsqueda
+                </a>
+                <a href="/ai-search.html" class="app-nav-link">
+                    🧠 Búsqueda IA
+                </a>
+            </nav>
+            
+            <div class="app-user-menu">
+                <div class="app-user-info">
+                    <div class="app-user-avatar" id="userAvatar">U</div>
+                    <span id="userName">Usuario</span>
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="logout()">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="app-main">
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+                <h2 class="card-title">📚 Gestión de Fuentes de Noticias</h2>
+                <p class="card-description">
+                    Selecciona las fuentes de noticias que te interesan. Solo verás contenido de las fuentes que selecciones.
+                </p>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('available')">
+                🌐 Fuentes Disponibles
+            </button>
+            <button class="tab" onclick="switchTab('selected')">
+                ✅ Mis Fuentes Seleccionadas
+            </button>
+        </div>
+
+        <!-- Tab: Fuentes Disponibles -->
+        <div id="available-tab" class="tab-content active">
+            <div class="card">
+                <div class="card-body">
+                    <div id="availableSourcesContainer">
+                        <div style="text-align: center; padding: 2rem;">
+                            <div class="spinner"></div>
+                            <p style="margin-top: 1rem; color: var(--gray-600);">Cargando fuentes disponibles...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Mis Fuentes Seleccionadas -->
+        <div id="selected-tab" class="tab-content">
+            <div class="card">
+                <div class="card-body">
+                    <div id="selectedSourcesContainer">
+                        <div style="text-align: center; padding: 2rem;">
+                            <div class="spinner"></div>
+                            <p style="margin-top: 1rem; color: var(--gray-600);">Cargando tus fuentes...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/auth.js"></script>
+    <script>
+        // ========== AUTENTICACIÓN ==========
+
+        // ========== TABS ==========
+        function switchTab(tab) {
+            // Actualizar tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'available') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('available-tab').classList.add('active');
+                loadAvailableSources();
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('selected-tab').classList.add('active');
+                loadSelectedSources();
+            }
+        }
+
+        // ========== CARGAR FUENTES DISPONIBLES ==========
+        async function loadAvailableSources() {
+            const container = document.getElementById('availableSourcesContainer');
+            
+            try {
+                const response = await authenticatedFetch('/api/public-urls?is_active=true');
+                
+                if (!response.ok) {
+                    throw new Error('Error al cargar fuentes');
+                }
+
+                const data = await response.json();
+                const sources = data.data || [];
+
+                if (sources.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <h3>No hay fuentes disponibles</h3>
+                            <p>El administrador aún no ha agregado fuentes de noticias.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Obtener fuentes ya seleccionadas
+                const selectedResponse = await authenticatedFetch('/api/my-urls');
+                const selectedData = await selectedResponse.json();
+                const selectedIds = (selectedData.data || []).map(s => s.public_url_id);
+
+                container.innerHTML = sources.map(source => {
+                    const isSelected = selectedIds.includes(source.id);
+                    return `
+                        <div class="source-card ${isSelected ? 'selected' : ''}" id="source-${source.id}">
+                            <div class="source-header">
+                                <div class="source-info">
+                                    <h3>${source.name || source.domain}</h3>
+                                    <div class="source-meta">
+                                        <span>🌐 ${source.domain}</span>
+                                        ${source.region ? `<span>📍 ${source.region}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div>
+                                    ${isSelected ? 
+                                        `<button class="btn btn-success" disabled>✅ Seleccionada</button>` :
+                                        `<button class="btn btn-primary" onclick="selectSource(${source.id}, '${source.name || source.domain}')">
+                                            ➕ Seleccionar
+                                        </button>`
+                                    }
+                                </div>
+                            </div>
+                            <a href="${source.url}" target="_blank" class="source-url">${source.url}</a>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <h3>Error al cargar fuentes</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ========== CARGAR FUENTES SELECCIONADAS ==========
+        async function loadSelectedSources() {
+            const container = document.getElementById('selectedSourcesContainer');
+            
+            try {
+                const response = await authenticatedFetch('/api/my-urls');
+                
+                if (!response.ok) {
+                    throw new Error('Error al cargar tus fuentes');
+                }
+
+                const data = await response.json();
+                const selections = data.data || [];
+
+                if (selections.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📚</div>
+                            <h3>No has seleccionado ninguna fuente</h3>
+                            <p>Ve a la pestaña "Fuentes Disponibles" para seleccionar fuentes de tu interés.</p>
+                            <button class="btn btn-primary" onclick="switchTab('available')" style="margin-top: 1rem;">
+                                Ver Fuentes Disponibles
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = selections.map(selection => {
+                    const source = selection.public_url;
+                    return `
+                        <div class="source-card selected">
+                            <div class="source-header">
+                                <div class="source-info">
+                                    <h3>${source.name || source.domain}</h3>
+                                    <div class="source-meta">
+                                        <span>🌐 ${source.domain}</span>
+                                        ${source.region ? `<span>📍 ${source.region}</span>` : ''}
+                                        <span style="color: var(--gray-400);">• Seleccionada el ${new Date(selection.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <button class="btn btn-danger btn-sm" onclick="unselectSource(${selection.id}, '${source.name || source.domain}')">
+                                        ❌ Deseleccionar
+                                    </button>
+                                </div>
+                            </div>
+                            <a href="${source.url}" target="_blank" class="source-url">${source.url}</a>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <h3>Error al cargar tus fuentes</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ========== SELECCIONAR FUENTE ==========
+        async function selectSource(publicUrlId, name) {
+            try {
+                const response = await authenticatedFetch('/api/my-urls/select', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ public_url_id: publicUrlId })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Error al seleccionar fuente');
+                }
+
+                await Swal.fire({
+                    title: '¡Éxito!',
+                    html: `<p>✅ Has seleccionado <strong>${name}</strong></p><p style="color: var(--gray-600); font-size: 0.9rem; margin-top: 8px;">Ahora verás contenido de esta fuente en tus búsquedas</p>`,
+                    icon: 'success',
+                    confirmButtonColor: '#059669'
+                });
+
+                // Recargar fuentes disponibles
+                loadAvailableSources();
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: '¡Error!',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        }
+
+        // ========== DESELECCIONAR FUENTE ==========
+        async function unselectSource(selectionId, name) {
+            const result = await Swal.fire({
+                title: '¿Deseleccionar fuente?',
+                html: `<p>¿Estás seguro de que quieres dejar de seguir <strong>${name}</strong>?</p><p style="color: var(--gray-600); font-size: 0.9rem; margin-top: 8px;">Ya no verás contenido de esta fuente en tus búsquedas</p>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, deseleccionar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!result.isConfirmed) return;
+
+            try {
+                const response = await authenticatedFetch(`/api/my-urls/select/${selectionId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Error al deseleccionar fuente');
+                }
+
+                await Swal.fire({
+                    title: '¡Deseleccionada!',
+                    text: `Has dejado de seguir ${name}`,
+                    icon: 'success',
+                    confirmButtonColor: '#059669'
+                });
+
+                // Recargar fuentes seleccionadas
+                loadSelectedSources();
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: '¡Error!',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        }
+
+        // ========== INICIALIZACIÓN ==========
+        (async function init() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+
+            // Cargar info del usuario
+            authenticatedFetch('/api/auth/me')
+                .then(res => res.json())
+                .then(user => {
+                    document.getElementById('userName').textContent = user.name || user.email;
+                    const userAvatar = document.getElementById('userAvatar');
+                    if (userAvatar && user.name) {
+                        userAvatar.textContent = user.name.charAt(0).toUpperCase();
+                    }
+                    
+                    // Cargar fuentes disponibles por defecto
+                    loadAvailableSources();
+                })
+                .catch(() => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/';
+                });
+        })();
+    </script>
+</body>
+</html>

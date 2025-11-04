@@ -1,0 +1,250 @@
+# ===================================
+# GITIGNORE PARA PROYECTO DE SCRAPING
+# ===================================
+
+# ===== ARCHIVOS DE ENTORNO =====
+.env
+
+# ===== NODE.JS =====
+# Dependencias
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files (solo para proyectos Gatsby, no aplica aquí)
+# .cache/
+# public
+
+# Archivos temporales en public (si existen)
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# ===== PRISMA =====
+# No ignorar schema.prisma ni migrations
+# Pero sí ignorar archivos temporales
+prisma/dev.db*
+prisma/*.db-journal
+
+# ===== PUPPETEER =====
+# Chromium downloads
+.local-chromium/
+.local-firefox/
+
+# ===== LOGS =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ===== SISTEMA OPERATIVO =====
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===== EDITORES E IDEs =====
+# Visual Studio Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ===== DATOS Y ARCHIVOS TEMPORALES =====
+# Archivos de datos de scraping
+scraped_data/
+downloads/
+temp_files/
+cache/
+
+# Archivos de backup
+*.bak
+*.backup
+*.old
+*.orig
+
+# Archivos comprimidos
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# ===== CONFIGURACIONES ESPECÍFICAS DEL PROYECTO =====
+# Archivos de configuración local (si existen)
+config/local.json
+config/development.json
+config/production.json
+
+# Archivos de testing temporal
+test-results/
+test-output/
+
+# Archivos de debugging
+debug-*.js
+debug-*.json
+debug-*.html
+
+# ===== VERCEL =====
+.vercel
+
+# ===== RAILWAY =====
+.railway/
+
+# ===== RENDER =====
+.render/
+
+# ===== HEROKU =====
+.heroku/
+
+# ===== CERTIFICADOS Y CLAVES =====
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# ===== ARCHIVOS DE MONITOREO =====
+# PM2
+.pm2/
+
+# Forever
+.forever/
+
+# ===== OTROS =====
+# Archivos de lock específicos (mantener package-lock.json)
+# yarn.lock si usas npm
+# package-lock.json si usas yarn
+
+# Archivos de análisis
+bundle-analyzer-report.html
+
+# Archivos de documentación generada automáticamente
+docs/generated/
+
+# ===== COMENTARIOS =====
+# Este .gitignore está optimizado para:
+# - Proyectos Node.js con Express
+# - Prisma ORM
+# - Puppeteer para web scraping
+# - Deployment en Vercel/Railway/Render
+# - Desarrollo en Windows/macOS/Linux

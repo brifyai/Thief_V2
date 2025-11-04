@@ -1,0 +1,1537 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web Scraper - Sistema de Extracción Inteligente</title>
+    <link rel="stylesheet" href="/css/design-system.css" />
+    <link rel="stylesheet" href="/css/config-helper.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* Estilos adicionales para SweetAlert */
+        .swal-wide {
+            max-width: 900px !important;
+        }
+        
+        .swal2-html-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        /* Spinner para loading */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .spinner-primary {
+            border-top-color: var(--color-primary);
+        }
+    </style>
+</head>
+<body class="app-container">
+    <!-- Header Global -->
+    <header class="app-header">
+        <div class="app-header-content">
+            <div class="app-logo">
+                <span class="app-logo-icon">📰</span>
+                <span>Web Scraper</span>
+            </div>
+            
+            <nav class="app-nav" id="mainNav">
+                <!-- Navegación se carga dinámicamente según rol -->
+            </nav>
+            
+            <div class="app-user-menu">
+                <div class="app-user-info">
+                    <div class="app-user-avatar" id="userAvatar">U</div>
+                    <span id="userName">Usuario</span>
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="logout()">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="app-main">
+        <!-- Estadísticas -->
+        <div class="stats-grid" style="margin-bottom: var(--spacing-2xl);">
+            <div class="stat-card">
+                <div class="stat-value" id="totalScrapes">0</div>
+                <div class="stat-label">Total Scrapes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="successfulScrapes">0</div>
+                <div class="stat-label">Exitosos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="failedScrapes">0</div>
+                <div class="stat-label">Fallidos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="successRate">0%</div>
+                <div class="stat-label">Tasa de Éxito</div>
+            </div>
+        </div>
+
+        <!-- Formulario para Guardar URL -->
+        <div class="card" style="margin-bottom: var(--spacing-xl);">
+            <div class="card-header">
+                <h3 class="card-title">💾 Guardar URL para Scraping</h3>
+                <p class="card-description">
+                    Agrega URLs a tu lista para extraer contenido posteriormente
+                </p>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label form-label-required">URL del Sitio</label>
+                    <input 
+                        type="url" 
+                        class="form-input" 
+                        id="urlToSave"
+                        placeholder="https://ejemplo.com/articulo"
+                    />
+                    <p class="form-help">Ingresa la URL completa del artículo que deseas guardar</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Nombre Descriptivo</label>
+                    <input 
+                        type="text" 
+                        class="form-input" 
+                        id="nombreToSave"
+                        placeholder="Ej: Noticia sobre economía regional"
+                    />
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Región</label>
+                    <select class="form-select" id="regionToSave">
+                        <option value="">Seleccionar región (opcional)</option>
+                        <option value="Arica y Parinacota">Arica y Parinacota</option>
+                        <option value="Tarapacá">Tarapacá</option>
+                        <option value="Antofagasta">Antofagasta</option>
+                        <option value="Atacama">Atacama</option>
+                        <option value="Coquimbo">Coquimbo</option>
+                        <option value="Valparaíso">Valparaíso</option>
+                        <option value="Metropolitana">Metropolitana</option>
+                        <option value="O'Higgins">O'Higgins</option>
+                        <option value="Maule">Maule</option>
+                        <option value="Ñuble">Ñuble</option>
+                        <option value="Biobío">Biobío</option>
+                        <option value="La Araucanía">La Araucanía</option>
+                        <option value="Los Ríos">Los Ríos</option>
+                        <option value="Los Lagos">Los Lagos</option>
+                        <option value="Aysén">Aysén</option>
+                        <option value="Magallanes">Magallanes</option>
+                        <option value="Nacional">Nacional</option>
+                    </select>
+                </div>
+                
+                <!-- NUEVO: Toggle de opciones avanzadas -->
+                <button type="button" class="btn btn-ghost btn-sm" onclick="toggleAdvancedOptions()" style="margin-top: 1rem;">
+                    <span id="advancedToggleIcon">▶</span> ⚙️ Opciones Avanzadas
+                </button>
+                
+                <!-- NUEVO: Sección colapsable de selectores personalizados -->
+                <div id="advancedOptions" style="display: none; margin-top: 1rem;">
+                    <div class="card" style="background: var(--gray-50); border: 1px solid var(--gray-200);">
+                        <div class="card-body">
+                            <h4 style="margin-bottom: 1rem;">🎯 Selectores CSS Personalizados</h4>
+                            <p style="color: var(--gray-600); font-size: 0.9rem; margin-bottom: 1rem;">
+                                💡 Usa estos campos solo si el scraping automático falla. 
+                                <a href="#" onclick="showSelectorHelp(); return false;" style="color: var(--primary);">¿Cómo encontrar selectores?</a>
+                            </p>
+                            
+                            <!-- NUEVO: Selectores de Listado -->
+                            <div style="background: var(--gray-100); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                                <h5 style="margin-bottom: 0.5rem; color: var(--primary);">📋 Selectores de Listado</h5>
+                                <p style="color: var(--gray-600); font-size: 0.85rem; margin-bottom: 1rem;">
+                                    Para extraer múltiples noticias de páginas principales (ej: https://www.lacuarta.com/)
+                                </p>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Contenedor de Noticia <span style="color: red;">*</span></label>
+                                    <input type="text" class="form-input" id="listingContainerSelector" 
+                                           placeholder="Ej: article.noticia, .news-item, .card">
+                                    <p class="form-help">Selector del elemento que contiene cada noticia en el listado</p>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Link de la Noticia <span style="color: red;">*</span></label>
+                                    <input type="text" class="form-input" id="listingLinkSelector" 
+                                           placeholder="Ej: a.titulo, h2 a, .link">
+                                    <p class="form-help">Selector del enlace a la noticia completa (dentro del contenedor)</p>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Título (opcional, para preview)</label>
+                                    <input type="text" class="form-input" id="listingTitleSelector" 
+                                           placeholder="Ej: h2, .titulo, .headline">
+                                    <p class="form-help">Selector del título de la noticia en el listado</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Selectores de Artículo Individual -->
+                            <div style="background: var(--gray-100); padding: 1rem; border-radius: 8px;">
+                                <h5 style="margin-bottom: 0.5rem; color: var(--success);">📰 Selectores de Artículo Individual</h5>
+                                <p style="color: var(--gray-600); font-size: 0.85rem; margin-bottom: 1rem;">
+                                    Para extraer contenido de cada noticia encontrada
+                                </p>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Título <span style="color: red;">*</span></label>
+                                <input type="text" class="form-input" id="customTitleSelector" 
+                                       placeholder="Ej: h1.article-title, .post-title, article h1">
+                                <p class="form-help">Selector CSS para el título del artículo</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Contenido <span style="color: red;">*</span></label>
+                                <input type="text" class="form-input" id="customContentSelector" 
+                                       placeholder="Ej: .article-body, .post-content, article .content">
+                                <p class="form-help">Selector CSS para el contenido principal</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Fecha (opcional)</label>
+                                <input type="text" class="form-input" id="customDateSelector" 
+                                       placeholder="Ej: time.published, .date, [datetime]">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Autor (opcional)</label>
+                                <input type="text" class="form-input" id="customAuthorSelector" 
+                                       placeholder="Ej: .author-name, [rel='author'], .byline">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Imagen (opcional)</label>
+                                <input type="text" class="form-input" id="customImageSelector" 
+                                       placeholder="Ej: .featured-image img, article img, meta[property='og:image']">
+                            </div>
+                            </div>
+                            
+                            <!-- Botones de prueba -->
+                            <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                                <button type="button" class="btn btn-success btn-sm" onclick="testAndSaveConfig()">
+                                    🧪 Probar y Guardar Configuración
+                                </button>
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="clearCustomSelectors()">
+                                    🧹 Limpiar Selectores
+                                </button>
+                            </div>
+                            <p style="color: var(--gray-600); font-size: 0.85rem; margin-top: 0.5rem;">
+                                💡 <strong>Tip:</strong> Usa "Probar y Guardar Configuración" para validar los selectores antes de guardar la URL.
+                            </p>
+                            
+                            <!-- Preview de resultados -->
+                            <div id="selectorPreview" style="display: none; margin-top: 1rem;">
+                                <!-- Se llenará dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-primary" onclick="saveUrl()">
+                    💾 Guardar URL
+                </button>
+                <button class="btn btn-success" onclick="scrapeListingAndSave()" style="margin-left: 0.5rem;">
+                    🕷️ Scrapear Listado
+                </button>
+            </div>
+        </div>
+
+        <!-- URLs Guardadas -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">📋 URLs Guardadas</h3>
+                <p class="card-description">
+                    Lista de todas las URLs almacenadas en la base de datos
+                </p>
+            </div>
+            <div class="card-body" style="padding: 0; overflow-x: auto;">
+                <table class="url-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nombre</th>
+                            <th>Región</th>
+                            <th>URL</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="savedUrlsTableBody">
+                        <!-- Contenido dinámico -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Artículo -->
+    <div id="articlePopup" class="article-popup">
+        <div class="article-popup-content">
+            <div class="article-popup-header">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <h2 style="margin: 0; flex: 1;">Artículo</h2>
+                    <button class="btn btn-ghost btn-icon" onclick="closePopup()">
+                        ✕
+                    </button>
+                </div>
+            </div>
+            <div class="article-popup-body" id="popupContent">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Config Helper Modal (ya existe) -->
+    <div id="config-helper-modal" class="config-helper-modal">
+        <!-- ... contenido del modal de configuración ... -->
+    </div>
+
+    <script src="/js/configHelper.js"></script>
+    <script src="/js/custom-selectors.js"></script>
+    <script src="/js/listing-scraper.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+
+        // ========== NAVEGACIÓN DINÁMICA ==========
+        function loadNavigation(userRole) {
+            const nav = document.getElementById('mainNav');
+            
+            if (userRole === 'admin') {
+                nav.innerHTML = `
+                    <a href="/scraper.html" class="app-nav-link active">
+                        👑 Admin - URLs Públicas
+                    </a>
+                    <a href="/admin-dashboard.html" class="app-nav-link">
+                        📊 Dashboard
+                    </a>
+                    <a href="/search.html" class="app-nav-link">
+                        🔍 Búsqueda
+                    </a>
+                    <a href="/ai-search.html" class="app-nav-link">
+                        🧠 Búsqueda IA
+                    </a>
+                `;
+            } else {
+                // Usuario normal - redirigir a my-sources
+                window.location.href = '/my-sources.html';
+            }
+        }
+
+        // ========== VERIFICACIÓN DE AUTENTICACIÓN ==========
+        (function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+
+            fetch('/api/auth/verify', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error('Token inválido');
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (!data.valid) {
+                    throw new Error('Token inválido');
+                }
+                const userNameElement = document.getElementById('userName');
+                const userAvatar = document.getElementById('userAvatar');
+                if (userNameElement) {
+                    userNameElement.textContent = user.name || user.email || 'Usuario';
+                }
+                if (userAvatar && user.name) {
+                    userAvatar.textContent = user.name.charAt(0).toUpperCase();
+                }
+                
+                // Cargar navegación según rol
+                loadNavigation(user.role);
+                
+                // Solo cargar URLs si es admin
+                if (user.role === 'admin') {
+                    loadSavedUrls();
+                }
+            })
+            .catch(() => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            });
+        })();
+
+        // ========== FUNCIONES DEL SCRAPER ==========
+        // 🔹 NUEVO: Cargar URLs Públicas (admin)
+        async function loadSavedUrls() {
+            try {
+                const response = await authenticatedFetch("/api/public-urls", {
+                    method: "GET",
+                });
+
+                if (!response.ok) {
+                    throw new Error("Error al cargar las URLs públicas");
+                }
+
+                const data = await response.json();
+                const tableBody = document.getElementById("savedUrlsTableBody");
+                tableBody.innerHTML = "";
+
+                const urls = data.data || [];
+                
+                if (urls.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 2rem; color: var(--gray-500);">
+                                📭 No hay URLs públicas creadas aún
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                urls.forEach((item, index) => {
+                    const row = document.createElement("tr");
+                    const statusBadge = item.is_active ? 
+                        '<span class="badge badge-success">Activa</span>' : 
+                        '<span class="badge badge-gray">Inactiva</span>';
+
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>
+                            <div>${item.name || item.domain}</div>
+                            <div style="font-size: 0.85rem; color: var(--gray-500);">${statusBadge}</div>
+                        </td>
+                        <td>${item.region || '-'}</td>
+                        <td><a href="${item.url}" target="_blank" style="color: var(--color-primary);">${item.url}</a></td>
+                        <td style="white-space: nowrap;">
+                            <button onclick="scrapearPagina('${item.url.replace(/'/g, "\\'")}', ${item.id})" class="btn btn-success btn-sm" style="margin-right: 5px;">
+                                🕷️ Scrapear
+                            </button>
+                            <button onclick="verHistorial('${item.url.replace(/'/g, "\\'")}')" class="btn btn-primary btn-sm" style="margin-right: 5px;">
+                                📋 Ver Historial
+                            </button>
+                            <button onclick="toggleUrlStatus(${item.id}, ${item.is_active})" class="btn btn-secondary btn-sm" style="margin-right: 5px;">
+                                ${item.is_active ? '⏸️ Desactivar' : '▶️ Activar'}
+                            </button>
+                            <button onclick="eliminarUrl(${item.id})" class="btn btn-danger btn-sm">
+                                🗑️ Eliminar
+                            </button>
+                        </td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Error:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al cargar las URLs públicas'
+                });
+            }
+        }
+
+        // 🔹 NUEVO: Activar/Desactivar URL Pública
+        async function toggleUrlStatus(id, currentStatus) {
+            const action = currentStatus ? 'desactivar' : 'activar';
+            const result = await Swal.fire({
+                title: `¿${action.charAt(0).toUpperCase() + action.slice(1)} URL?`,
+                text: currentStatus ? 
+                    "Los usuarios no podrán seleccionar esta URL mientras esté desactivada" :
+                    "Los usuarios podrán seleccionar esta URL nuevamente",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: currentStatus ? "#d97706" : "#059669",
+                cancelButtonColor: "#6b7280",
+                confirmButtonText: `Sí, ${action}`,
+                cancelButtonText: "Cancelar",
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await authenticatedFetch(`/api/public-urls/${id}`, {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            is_active: !currentStatus
+                        }),
+                    });
+
+                    if (response.ok) {
+                        Swal.fire({
+                            title: "¡Actualizado!",
+                            text: `URL ${currentStatus ? 'desactivada' : 'activada'} exitosamente`,
+                            icon: "success",
+                            confirmButtonColor: "#059669",
+                        });
+                        loadSavedUrls();
+                    } else {
+                        throw new Error("Error al actualizar la URL");
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    Swal.fire({
+                        title: "¡Error!",
+                        text: "Error al actualizar la URL",
+                        icon: "error",
+                        confirmButtonColor: "#dc2626",
+                    });
+                }
+            }
+        }
+
+        // 🔹 NUEVO: Eliminar URL Pública (admin)
+        async function eliminarUrl(id) {
+            const result = await Swal.fire({
+                title: "¿Estás seguro?",
+                text: "Esta URL será desactivada permanentemente",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#dc2626",
+                cancelButtonColor: "#6b7280",
+                confirmButtonText: "Sí, eliminar",
+                cancelButtonText: "Cancelar",
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await authenticatedFetch(`/api/public-urls/${id}`, {
+                        method: "DELETE",
+                    });
+
+                    if (response.ok) {
+                        Swal.fire({
+                            title: "¡Eliminado!",
+                            text: "La URL pública ha sido eliminada exitosamente",
+                            icon: "success",
+                            confirmButtonColor: "#059669",
+                        });
+                        loadSavedUrls();
+                    } else {
+                        throw new Error("Error al eliminar la URL");
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    Swal.fire({
+                        title: "¡Error!",
+                        text: "Error al eliminar la URL",
+                        icon: "error",
+                        confirmButtonColor: "#dc2626",
+                    });
+                }
+            }
+        }
+
+        // 🔹 NUEVO: Guardar URL Pública (solo admin)
+        async function saveUrl() {
+            const url = document.getElementById("urlToSave").value;
+            const nombre = document.getElementById("nombreToSave").value;
+            const region = document.getElementById("regionToSave").value;
+
+            if (!url) {
+                Swal.fire({
+                    title: "¡Error!",
+                    text: "Por favor ingresa una URL",
+                    icon: "error",
+                    confirmButtonColor: "#2563eb",
+                });
+                return;
+            }
+
+            try {
+                // Extraer dominio
+                const urlObj = new URL(url);
+                const domain = urlObj.hostname.replace('www.', '');
+
+                // 1. Guardar como PublicUrl (endpoint de admin)
+                const response = await authenticatedFetch("/api/public-urls", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        url: url,
+                        name: nombre || domain,
+                        domain: domain,
+                        region: region || null,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Error al guardar la URL pública");
+                }
+
+                // 2. Si hay selectores personalizados, guardar configuración
+                const hasCustomSelectors = document.getElementById('customTitleSelector')?.value?.trim() || 
+                                          document.getElementById('customContentSelector')?.value?.trim();
+                
+                if (hasCustomSelectors) {
+                    console.log('📝 Detectados selectores personalizados, guardando configuración...');
+                    await saveConfigurationSilent(url);
+                }
+
+                // 3. Mostrar éxito y limpiar
+                Swal.fire({
+                    title: "¡Éxito!",
+                    html: hasCustomSelectors ? 
+                        "<p>✅ URL pública creada exitosamente</p><p style='color: #059669; font-size: 0.9rem; margin-top: 8px;'>✅ Configuración de selectores también guardada</p><p style='color: #6b7280; font-size: 0.85rem; margin-top: 8px;'>Los usuarios ahora pueden seleccionar esta fuente</p>" :
+                        "<p>✅ URL pública creada exitosamente</p><p style='color: #6b7280; font-size: 0.85rem; margin-top: 8px;'>Los usuarios ahora pueden seleccionar esta fuente</p>",
+                    icon: "success",
+                    confirmButtonColor: "#059669",
+                });
+                
+                document.getElementById("urlToSave").value = "";
+                document.getElementById("nombreToSave").value = "";
+                document.getElementById("regionToSave").value = "";
+                loadSavedUrls();
+                
+            } catch (error) {
+                console.error("Error:", error);
+                Swal.fire({
+                    title: "¡Error!",
+                    text: error.message || "Error al guardar la URL pública",
+                    icon: "error",
+                    confirmButtonColor: "#dc2626",
+                });
+            }
+        }
+
+        // ========== FUNCIÓN PARA SCRAPEAR TODA LA PÁGINA ==========
+        async function scrapearPagina(url, urlId) {
+            try {
+                // Mostrar loading
+                Swal.fire({
+                    title: '🕷️ Scrapeando página...',
+                    html: 'Extrayendo todas las noticias del sitio web...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Hacer el scraping de toda la página
+                const response = await authenticatedFetch("/scrape", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ 
+                        url: url,
+                        keyword: "" // Sin filtro de palabra clave
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error al scrapear (${response.status})`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Cerrar loading
+                Swal.close();
+
+                // Mostrar resultados en una tabla modal
+                const tableHTML = `
+                    <div style="text-align: left; max-height: 600px; overflow-y: auto;">
+                        <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                            <strong>Sitio:</strong> ${data.sitio}<br>
+                            <strong>Total de noticias encontradas:</strong> ${data.total_noticias}
+                        </div>
+                        <table class="url-table" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Título</th>
+                                    <th>Descripción</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.noticias.map((noticia, index) => `
+                                    <tr>
+                                        <td>${index + 1}</td>
+                                        <td style="max-width: 300px;">${noticia.titulo}</td>
+                                        <td style="max-width: 400px; font-size: 14px; color: #666;">${noticia.descripcion}</td>
+                                        <td style="white-space: nowrap;">
+                                            <button onclick="verYGuardarNoticia('${noticia.enlace.replace(/'/g, "\\'")}')"
+                                                    class="btn btn-primary btn-sm" 
+                                                    style="margin-right: 5px;">
+                                                👁️ Ver
+                                            </button>
+                                            <button onclick="guardarNoticiaDirecta('${noticia.enlace.replace(/'/g, "\\'")}')"
+                                                    class="btn btn-success btn-sm">
+                                                💾 Guardar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                await Swal.fire({
+                    title: `📰 ${data.total_noticias} Noticias Encontradas`,
+                    html: tableHTML,
+                    width: '1000px',
+                    showCloseButton: true,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'swal-wide'
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error al scrapear página:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: '❌ Error al scrapear',
+                    text: error.message || 'No se pudo extraer las noticias del sitio',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        }
+
+        // ========== FUNCIÓN PARA VER Y GUARDAR UNA NOTICIA INDIVIDUAL ==========
+        async function verYGuardarNoticia(url) {
+            // Cerrar el modal de SweetAlert si está abierto
+            Swal.close();
+            
+            try {
+                // Mostrar loading
+                Swal.fire({
+                    title: '🕷️ Extrayendo noticia...',
+                    html: 'Obteniendo contenido completo...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Extraer contenido de la noticia
+                const response = await authenticatedFetch("/scrape-single", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ url }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error al extraer noticia (${response.status})`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Detectar si necesita ayuda para configurar
+                if (data.metadata && data.metadata.needsHelp) {
+                    const shouldHelp = await Swal.fire({
+                        icon: 'question',
+                        title: '🤔 No pudimos extraer el contenido automáticamente',
+                        html: `
+                            <p>Este sitio usa una estructura que aún no conocemos, pero <strong>tú puedes ayudarnos</strong> a configurarlo en solo 2 minutos.</p>
+                            <p style="color: #666; font-size: 14px;">Tu configuración ayudará a otros usuarios a extraer contenido de este sitio.</p>
+                        `,
+                        showCancelButton: true,
+                        showDenyButton: true,
+                        confirmButtonText: '🤝 Ayudar ahora',
+                        denyButtonText: '🔄 Intentar de nuevo',
+                        cancelButtonText: '❌ Cancelar',
+                        confirmButtonColor: '#4f46e5',
+                        denyButtonColor: '#f59e0b',
+                        cancelButtonColor: '#6b7280'
+                    });
+
+                    if (shouldHelp.isConfirmed) {
+                        const domain = new URL(url).hostname.replace('www.', '');
+                        configHelper.setOnComplete(() => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Probando con tu configuración!',
+                                text: 'Vamos a intentar el scraping de nuevo...',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                verYGuardarNoticia(url);
+                            });
+                        });
+                        configHelper.init(url, domain);
+                    } else if (shouldHelp.isDenied) {
+                        verYGuardarNoticia(url);
+                    }
+                    return;
+                }
+
+                // Guardar automáticamente
+                const saveResponse = await authenticatedFetch("/api/scraping/save", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        url: data.url,
+                        titulo: data.titulo,
+                        contenido: data.contenido,
+                        fecha: data.fecha,
+                        autor: data.autor,
+                        imagenes: data.imagenes,
+                        metadata: data.metadata
+                    }),
+                });
+
+                if (!saveResponse.ok) {
+                    console.warn('No se pudo guardar automáticamente');
+                }
+
+                Swal.close();
+
+                // Abrir el popup con el contenido
+                const popup = document.getElementById("articlePopup");
+                const popupContent = document.getElementById("popupContent");
+
+                popup.style.display = "flex";
+                popupContent.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="reescribirConIA()">
+                            ✨ Reescribir con IA
+                        </button>
+                    </div>
+                    <h2 style="margin-bottom: 16px;">${data.titulo}</h2>
+                    <div class="article-meta">
+                        ${data.fecha ? `<span>📅 ${data.fecha}</span>` : ""}
+                        ${data.autor ? `<span>✍️ ${data.autor}</span>` : ""}
+                        <span>🔗 <a href="${data.url}" target="_blank" style="color: var(--color-primary);">Ver original</a></span>
+                    </div>
+                    <div style="margin-top: 24px; line-height: 1.8;">
+                        ${data.contenido.split("\n\n").map((p) => `<p style="margin-bottom: 16px;">${p}</p>`).join("")}
+                    </div>
+                    ${data.imagenes && data.imagenes.length > 0 ? `
+                        <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                            ${data.imagenes.map((src) => `
+                                <img src="${src}" alt="Imagen del artículo" 
+                                     style="width: 100%; border-radius: 8px; box-shadow: var(--shadow-sm);"
+                                     onerror="this.style.display='none'" loading="lazy">
+                            `).join("")}
+                        </div>
+                    ` : ""}
+                `;
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: '❌ Error',
+                    text: error.message || 'No se pudo extraer la noticia',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        }
+
+        // ========== FUNCIÓN PARA GUARDAR NOTICIA SIN VERLA ==========
+        async function guardarNoticiaDirecta(url) {
+            // Cerrar el modal de SweetAlert si está abierto
+            Swal.close();
+            
+            try {
+                // Mostrar loading
+                Swal.fire({
+                    title: '💾 Guardando noticia...',
+                    html: 'Extrayendo y guardando contenido...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Extraer contenido
+                const response = await authenticatedFetch("/scrape-single", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ url }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error al extraer noticia (${response.status})`);
+                }
+
+                const data = await response.json();
+
+                if (data.error || (data.metadata && data.metadata.needsHelp)) {
+                    throw new Error('No se pudo extraer el contenido de esta noticia');
+                }
+
+                // Guardar en BD
+                const saveResponse = await authenticatedFetch("/api/scraping/save", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        url: data.url,
+                        titulo: data.titulo,
+                        contenido: data.contenido,
+                        fecha: data.fecha,
+                        autor: data.autor,
+                        imagenes: data.imagenes,
+                        metadata: data.metadata
+                    }),
+                });
+
+                if (!saveResponse.ok) {
+                    throw new Error('Error al guardar en la base de datos');
+                }
+
+                const saveData = await saveResponse.json();
+
+                // Mostrar éxito
+                await Swal.fire({
+                    icon: 'success',
+                    title: '✅ ¡Guardado!',
+                    html: `
+                        <p><strong>${data.titulo}</strong></p>
+                        <p style="color: #666; font-size: 14px; margin-top: 8px;">
+                            ${saveData.data.category ? `Categoría: ${saveData.data.category}` : ''}
+                            ${saveData.data.region ? ` | Región: ${saveData.data.region}` : ''}
+                        </p>
+                    `,
+                    confirmButtonColor: '#059669',
+                    timer: 3000
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: '❌ Error',
+                    text: error.message || 'No se pudo guardar la noticia',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        }
+
+        // ========== FUNCIÓN ORIGINAL PARA SCRAPEAR Y GUARDAR (MANTENER COMPATIBILIDAD) ==========
+        async function scrapearYGuardar(url, urlId) {
+            try {
+                // Obtener selectores personalizados si existen
+                const customSelectors = getCustomSelectors();
+                
+                // Mostrar loading
+                Swal.fire({
+                    title: '🕷️ Scrapeando...',
+                    html: customSelectors ? 'Extrayendo contenido con selectores personalizados...' : 'Extrayendo contenido del sitio web...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Hacer el scraping (con o sin selectores personalizados)
+                const response = await authenticatedFetch("/scrape-single", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ url, customSelectors }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error al scrapear (${response.status})`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Detectar si necesita ayuda para configurar
+                if (data.metadata && data.metadata.needsHelp) {
+                    const shouldHelp = await Swal.fire({
+                        icon: 'question',
+                        title: '🤔 No pudimos extraer el contenido automáticamente',
+                        html: `
+                            <p>Este sitio usa una estructura que aún no conocemos, pero <strong>tú puedes ayudarnos</strong> a configurarlo en solo 2 minutos.</p>
+                            <p style="color: #666; font-size: 14px;">Tu configuración ayudará a otros usuarios a extraer contenido de este sitio.</p>
+                        `,
+                        showCancelButton: true,
+                        showDenyButton: true,
+                        confirmButtonText: '🤝 Ayudar ahora',
+                        denyButtonText: '🔄 Intentar de nuevo',
+                        cancelButtonText: '❌ Cancelar',
+                        confirmButtonColor: '#4f46e5',
+                        denyButtonColor: '#f59e0b',
+                        cancelButtonColor: '#6b7280'
+                    });
+
+                    if (shouldHelp.isConfirmed) {
+                        const domain = new URL(url).hostname.replace('www.', '');
+                        configHelper.setOnComplete(() => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Probando con tu configuración!',
+                                text: 'Vamos a intentar el scraping de nuevo...',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                scrapearYGuardar(url, urlId);
+                            });
+                        });
+                        configHelper.init(url, domain);
+                    } else if (shouldHelp.isDenied) {
+                        scrapearYGuardar(url, urlId);
+                    }
+                    return;
+                }
+
+                // Guardar el contenido scrapeado
+                const saveResponse = await authenticatedFetch("/api/scraping/save", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        url: data.url,
+                        titulo: data.titulo,
+                        contenido: data.contenido,
+                        fecha: data.fecha,
+                        autor: data.autor,
+                        imagenes: data.imagenes,
+                        metadata: data.metadata
+                    }),
+                });
+
+                if (!saveResponse.ok) {
+                    throw new Error("Error al guardar el contenido");
+                }
+
+                // Si usó selectores custom y funcionó, preguntar si guardar config
+                if (customSelectors && data.metadata?.configType === 'custom') {
+                    const { isConfirmed } = await Swal.fire({
+                        icon: 'question',
+                        title: '💾 ¿Guardar configuración?',
+                        text: 'Los selectores funcionaron. ¿Deseas guardarlos para usar automáticamente en este dominio?',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, guardar',
+                        cancelButtonText: 'No',
+                        confirmButtonColor: '#059669'
+                    });
+                    
+                    if (isConfirmed) {
+                        await saveConfiguration(url, customSelectors);
+                    }
+                }
+
+                // Mostrar éxito
+                await Swal.fire({
+                    icon: 'success',
+                    title: '✅ ¡Scraping exitoso!',
+                    html: `
+                        <p><strong>Título:</strong> ${data.titulo}</p>
+                        <p><strong>Contenido:</strong> ${data.contenido.substring(0, 100)}...</p>
+                        <p style="color: #059669; font-size: 14px; margin-top: 16px;">
+                            El contenido ha sido extraído y guardado correctamente.
+                        </p>
+                    `,
+                    confirmButtonColor: '#059669',
+                    confirmButtonText: 'Ver contenido completo'
+                });
+
+                // Abrir el popup con el contenido
+                verNoticia(url);
+
+            } catch (error) {
+                console.error("Error al scrapear:", error);
+                
+                // Manejo específico de errores
+                let errorTitle = '❌ Error al scrapear';
+                let errorText = error.message || 'No se pudo extraer el contenido del sitio';
+                let errorIcon = 'error';
+                
+                // Error 429: Rate limit
+                if (error.message && error.message.includes('429')) {
+                    errorTitle = '⏱️ Límite de solicitudes alcanzado';
+                    errorText = 'Has realizado demasiadas solicitudes. Por favor espera unos minutos antes de intentar de nuevo.';
+                    errorIcon = 'warning';
+                }
+                // Error 401/403: Autenticación
+                else if (error.message && (error.message.includes('401') || error.message.includes('403'))) {
+                    errorTitle = '🔒 Sesión expirada';
+                    errorText = 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.';
+                    errorIcon = 'warning';
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 2000);
+                }
+                // Error 404: No encontrado
+                else if (error.message && error.message.includes('404')) {
+                    errorTitle = '🔍 Página no encontrada';
+                    errorText = 'La URL no existe o no está disponible. Verifica que la URL sea correcta.';
+                }
+                // Error de timeout
+                else if (error.message && (error.message.includes('timeout') || error.message.includes('ETIMEDOUT'))) {
+                    errorTitle = '⏰ Tiempo de espera agotado';
+                    errorText = 'El sitio web tardó demasiado en responder. Intenta de nuevo más tarde.';
+                }
+                // Error de validación
+                else if (error.message && error.message.includes('inválido')) {
+                    errorTitle = '⚠️ Contenido inválido';
+                    errorText = error.message;
+                }
+                
+                Swal.fire({
+                    icon: errorIcon,
+                    title: errorTitle,
+                    text: errorText,
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        }
+
+        let activeUrl = null;
+
+        // ========== FUNCIÓN PARA VER HISTORIAL DE NOTICIAS ==========
+        async function verHistorial(url) {
+            try {
+                // Mostrar loading
+                Swal.fire({
+                    title: '📋 Cargando historial...',
+                    html: 'Obteniendo las últimas noticias capturadas de esta URL...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Obtener historial
+                const response = await authenticatedFetch(`/api/scraping/history?url=${encodeURIComponent(url)}`, {
+                    method: "GET"
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error al obtener historial (${response.status})`);
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Error al obtener historial');
+                }
+
+                // Cerrar loading
+                Swal.close();
+
+                // Si no hay historial, ofrecer scrapear
+                if (!data.data || data.data.length === 0) {
+                    const result = await Swal.fire({
+                        icon: 'info',
+                        title: 'Sin historial',
+                        html: `
+                            <p>No hay noticias guardadas para esta URL.</p>
+                            <p>¿Deseas scrapear ahora?</p>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: '🕷️ Scrapear ahora',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#059669'
+                    });
+
+                    if (result.isConfirmed) {
+                        // Buscar el ID de la URL
+                        const urlsResponse = await authenticatedFetch("/api/urls", { method: "GET" });
+                        const urlsData = await urlsResponse.json();
+                        const urlItem = urlsData.urls.find(u => u.url === url);
+                        if (urlItem) {
+                            scrapearYGuardar(url, urlItem.id);
+                        }
+                    }
+                    return;
+                }
+
+                // Mostrar historial en un modal
+                const historialHTML = `
+                    <div style="text-align: left; max-height: 500px; overflow-y: auto;">
+                        <p style="margin-bottom: 20px; color: #666;">
+                            <strong>${data.total}</strong> ${data.total === 1 ? 'noticia capturada' : 'noticias capturadas'}
+                        </p>
+                        ${data.data.map((item, index) => `
+                            <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: #f9fafb;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                    <h4 style="margin: 0; color: #1f2937; font-size: 16px;">${index + 1}. ${item.titulo}</h4>
+                                    ${item.category ? `<span class="badge badge-primary">${item.category}</span>` : ''}
+                                </div>
+                                <p style="color: #6b7280; font-size: 14px; margin: 8px 0;">${item.contenido}</p>
+                                <div style="display: flex; gap: 16px; font-size: 12px; color: #9ca3af; margin-top: 8px;">
+                                    ${item.fecha ? `<span>📅 ${item.fecha}</span>` : ''}
+                                    ${item.autor ? `<span>✍️ ${item.autor}</span>` : ''}
+                                    ${item.region ? `<span>📍 ${item.region}</span>` : ''}
+                                    <span>🕐 ${new Date(item.scraped_at).toLocaleString('es-CL')}</span>
+                                </div>
+                                <button onclick="verContenidoCompleto(${item.id})" class="btn btn-primary btn-sm" style="margin-top: 12px;">
+                                    👁️ Ver completo
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                await Swal.fire({
+                    title: '📋 Historial de Noticias',
+                    html: historialHTML,
+                    width: '800px',
+                    showCloseButton: true,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'swal-wide'
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error al ver historial:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: '❌ Error',
+                    text: error.message || 'No se pudo obtener el historial',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        }
+
+        // ========== FUNCIÓN PARA VER CONTENIDO COMPLETO DE UNA NOTICIA ==========
+        async function verContenidoCompleto(id) {
+            try {
+                Swal.fire({
+                    title: 'Cargando...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                const response = await authenticatedFetch(`/api/scraping/content/${id}`, {
+                    method: "GET"
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al cargar el contenido');
+                }
+
+                const result = await response.json();
+                const data = result.data;
+
+                Swal.close();
+
+                // Abrir en el popup principal
+                const popup = document.getElementById("articlePopup");
+                const popupContent = document.getElementById("popupContent");
+
+                popup.style.display = "flex";
+                popupContent.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="reescribirConIA()">
+                            ✨ Reescribir con IA
+                        </button>
+                    </div>
+                    <h2 style="margin-bottom: 16px;">${data.titulo}</h2>
+                    <div class="article-meta">
+                        ${data.fecha ? `<span>📅 ${data.fecha}</span>` : ""}
+                        ${data.autor ? `<span>✍️ ${data.autor}</span>` : ""}
+                        ${data.category ? `<span class="badge badge-primary">${data.category}</span>` : ""}
+                        ${data.region ? `<span class="badge badge-info">${data.region}</span>` : ""}
+                        <span>🔗 <a href="${data.url}" target="_blank" style="color: var(--color-primary);">Ver original</a></span>
+                    </div>
+                    <div style="margin-top: 24px; line-height: 1.8;">
+                        ${data.contenido.split("\n\n").map((p) => `<p style="margin-bottom: 16px;">${p}</p>`).join("")}
+                    </div>
+                    ${data.imagenes && data.imagenes.length > 0 ? `
+                        <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                            ${data.imagenes.map((src) => `
+                                <img src="${src}" alt="Imagen del artículo" 
+                                     style="width: 100%; border-radius: 8px; box-shadow: var(--shadow-sm);"
+                                     onerror="this.style.display='none'" loading="lazy">
+                            `).join("")}
+                        </div>
+                    ` : ""}
+                `;
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message || 'No se pudo cargar el contenido'
+                });
+            }
+        }
+
+        async function verNoticia(url) {
+            if (activeUrl === url) {
+                return;
+            }
+
+            try {
+                activeUrl = url;
+                const popup = document.getElementById("articlePopup");
+                const popupContent = document.getElementById("popupContent");
+
+                popup.style.display = "flex";
+                popupContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <div class="spinner" style="margin: 0 auto 20px;"></div>
+                        <div>Cargando artículo...</div>
+                    </div>
+                `;
+
+                const response = await authenticatedFetch("/scrape-single", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ url }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error al cargar la noticia (${response.status})`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Detectar si necesita ayuda para configurar
+                if (data.metadata && data.metadata.needsHelp) {
+                    popup.style.display = "none";
+                    
+                    const shouldHelp = await Swal.fire({
+                        icon: 'question',
+                        title: '🤔 No pudimos extraer el contenido automáticamente',
+                        html: `
+                            <p>Este sitio usa una estructura que aún no conocemos, pero <strong>tú puedes ayudarnos</strong> a configurarlo en solo 2 minutos.</p>
+                            <p style="color: #666; font-size: 14px;">Tu configuración ayudará a otros usuarios a extraer contenido de este sitio.</p>
+                        `,
+                        showCancelButton: true,
+                        showDenyButton: true,
+                        confirmButtonText: '🤝 Ayudar ahora',
+                        denyButtonText: '🔄 Intentar de nuevo',
+                        cancelButtonText: '❌ Cancelar',
+                        confirmButtonColor: '#4f46e5',
+                        denyButtonColor: '#f59e0b',
+                        cancelButtonColor: '#6b7280'
+                    });
+
+                    if (shouldHelp.isConfirmed) {
+                        const domain = new URL(url).hostname.replace('www.', '');
+                        configHelper.setOnComplete(() => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Probando con tu configuración!',
+                                text: 'Vamos a intentar el scraping de nuevo...',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                verNoticia(url);
+                            });
+                        });
+                        configHelper.init(url, domain);
+                    } else if (shouldHelp.isDenied) {
+                        verNoticia(url);
+                    }
+                    return;
+                }
+
+                popupContent.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="reescribirConIA()">
+                            ✨ Reescribir con IA
+                        </button>
+                    </div>
+                    <h2 style="margin-bottom: 16px;">${data.titulo}</h2>
+                    <div class="article-meta">
+                        ${data.fecha ? `<span>📅 ${data.fecha}</span>` : ""}
+                        ${data.autor ? `<span>✍️ ${data.autor}</span>` : ""}
+                        <span>🔗 <a href="${data.url}" target="_blank" style="color: var(--color-primary);">Ver original</a></span>
+                    </div>
+                    <div style="margin-top: 24px; line-height: 1.8;">
+                        ${data.contenido.split("\n\n").map((p) => `<p style="margin-bottom: 16px;">${p}</p>`).join("")}
+                    </div>
+                    ${data.imagenes && data.imagenes.length > 0 ? `
+                        <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                            ${data.imagenes.map((src) => `
+                                <img src="${src}" alt="Imagen del artículo" 
+                                     style="width: 100%; border-radius: 8px; box-shadow: var(--shadow-sm);"
+                                     onerror="this.style.display='none'" loading="lazy">
+                            `).join("")}
+                        </div>
+                    ` : ""}
+                `;
+            } catch (error) {
+                console.error("Error al cargar la noticia:", error);
+                popupContent.innerHTML = `
+                    <div class="alert alert-error">
+                        <div class="alert-icon">❌</div>
+                        <div class="alert-content">
+                            <div class="alert-title">Error al cargar la noticia</div>
+                            <div class="alert-message">${error.message}</div>
+                        </div>
+                    </div>
+                    <button onclick="verNoticia('${url.replace(/'/g, "\\'")}')" class="btn btn-primary mt-3">
+                        🔄 Reintentar
+                    </button>
+                `;
+            } finally {
+                activeUrl = null;
+            }
+        }
+
+        async function reescribirConIA() {
+            try {
+                const titulo = document.querySelector(".article-popup-body h2").textContent;
+                const contenido = Array.from(document.querySelectorAll(".article-popup-body p"))
+                    .map((p) => p.textContent)
+                    .join("\n\n");
+
+                if (!titulo || !contenido) {
+                    throw new Error("No se pudo obtener el contenido de la noticia");
+                }
+
+                const aiVersionDiv = document.createElement("div");
+                aiVersionDiv.className = "alert alert-info mt-3";
+                aiVersionDiv.innerHTML = `
+                    <div class="alert-icon"><div class="spinner spinner-primary"></div></div>
+                    <div class="alert-content">
+                        <div class="alert-title">Reescribiendo con IA...</div>
+                        <div class="alert-message">Por favor espera...</div>
+                    </div>
+                `;
+                document.querySelector(".article-popup-body").appendChild(aiVersionDiv);
+
+                const response = await authenticatedFetch("/rewrite-with-ai", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        titulo: titulo.trim(),
+                        contenido: contenido.trim(),
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Error al reescribir la noticia");
+                }
+
+                const data = await response.json();
+
+                aiVersionDiv.className = "card mt-3";
+                aiVersionDiv.innerHTML = `
+                    <div class="card-header">
+                        <h3 class="card-title">✨ Versión reescrita con IA</h3>
+                    </div>
+                    <div class="card-body">
+                        <h4 style="margin-bottom: 16px;">${data.titulo}</h4>
+                        <div style="line-height: 1.8;">
+                            ${data.contenido.split("\n\n").map((p) => `<p style="margin-bottom: 16px;">${p}</p>`).join("")}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error("Error:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message || 'Error al reescribir la noticia'
+                });
+            }
+        }
+
+        function closePopup() {
+            const popup = document.getElementById("articlePopup");
+            popup.style.display = "none";
+            document.getElementById("popupContent").innerHTML = "";
+            activeUrl = null;
+        }
+
+        document.getElementById("articlePopup").addEventListener("click", function (e) {
+            if (e.target === this) {
+                closePopup();
+            }
+        });
+
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape" && document.getElementById("articlePopup").style.display === "flex") {
+                closePopup();
+            }
+        });
+    </script>
+
+    <!-- Config Helper Modal -->
+    <div id="config-helper-modal" class="config-helper-modal">
+        <div class="modal-backdrop" onclick="if(confirm('¿Seguro que quieres cancelar? Se perderá el progreso.')) configHelper.hideModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🤝 Ayuda a mejorar el scraping</h2>
+                <button class="close-btn" onclick="if(confirm('¿Seguro que quieres cancelar? Se perderá el progreso.')) configHelper.hideModal()">×</button>
+            </div>
+            
+            <div class="wizard-steps">
+                <div class="step active">1</div>
+                <div class="step-line"></div>
+                <div class="step">2</div>
+                <div class="step-line"></div>
+                <div class="step">3</div>
+                <div class="step-line"></div>
+                <div class="step">4</div>
+                <div class="step-line"></div>
+                <div class="step">5</div>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Contenido dinámico según step -->
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary">← Atrás</button>
+                <button class="btn btn-primary">Siguiente →</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
